@@ -79,10 +79,11 @@ def generate_latex():
         kepler.orbital_radius(),
         kepler.circular_velocity(),
         kepler.escape_velocity(),
+        kepler.semi_latus_rectum(),
     ]
-    circularEquations = [equation_methods[0], equation_methods[1]]
-    ellipticalEquations = [equation_methods[2]]
-    parabolicEquations = [equation_methods[3], equation_methods[4]]
+    circularEquations = [equation_methods[0], equation_methods[1], equation_methods[4]]
+    ellipticalEquations = [equation_methods[2], equation_methods[6]]
+    parabolicEquations = [equation_methods[3]]
     hyperbolicEquations = [equation_methods[5]]
     latex_lines = [
 r"\documentclass[10pt]{article}",

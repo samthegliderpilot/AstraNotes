@@ -21,35 +21,41 @@ class KeplerianEquations:
         eq = sy.Eq(sy.Symbol('v'), v)
         return EquationDefinition(eq, "Vis-Viva", "The ballance of potential and kinetic energy", "BMW", Length)#TODO: This dimension is wrong
 
-    def mean_motion(self):
+    def mean_motion(self)->EquationDefinition:
         """Returns the mean motion of the orbit"""
         n = sy.sqrt(self.mu/self.a**3)
         eq = sy.Eq(sy.Symbol('n', real=True, positive=True), n)
         return EquationDefinition(eq, "Mean Motion (n)", "The rate of mean motion", "BMW", Angle/Time)
     
-    def orbital_period(self):
+    def orbital_period(self)->EquationDefinition:
         """Returns symbolic form of orbital period"""
         T = 2 * sy.pi * sy.sqrt(self.a**3 / self.mu)
         eq = sy.Eq(sy.Symbol('T'), T)
-        return EquationDefinition(eq, "Period (T)", "The time it takes for one orbit to go", "BMW", Time)
+        return EquationDefinition(eq, "Period (T)", "The time it takes for one orbit to go", "Fundamenals of Astrodynamics and Applications 4th Edition", Time)
     
-    def orbital_radius(self):
+    def orbital_radius(self)->EquationDefinition:
         """Returns symbolic form of orbital radius"""
         R = self.p / (1+self.e*sy.cos(self.true_anomaly))
         eq = sy.Eq(self.r, R)
         return EquationDefinition(eq, "Radius (r)", "The true-anomaly varying radius of the orbit", "BMW", Length)
                     
-    def circular_velocity(self):
+    def circular_velocity(self)->EquationDefinition:
         """Returns symbolic form of circular orbit velocity"""
         v_c = sy.sqrt(self.mu / self.r)
         eq = sy.Eq(sy.Symbol('v_c'), v_c)
         return EquationDefinition(eq, "Circular Velocity ($v_{circ}$)", "The speed of a satellite in a circular orbit", "BMW", Length/Time)
 
-    def escape_velocity(self):
+    def escape_velocity(self)->EquationDefinition:
         """Returns symbolic form of escape velocity"""
         v_e = sy.sqrt(2 * self.mu / self.r)
         eq = sy.Eq(sy.Symbol('v_e'), v_e)
         return EquationDefinition(eq, "Escape Velocity ($v_e$)", "The speed a satellite needs to have to escape the central body it is arround", "BMW", Length/Time)
+
+    def semi_latus_rectum(self)->EquationDefinition:
+        """Returns symbolic form of circular orbit velocity"""
+        p = self.a * (1 - self.e**2)
+        eq = sy.Eq(sy.Symbol('p'), p)
+        return EquationDefinition(eq, "Semi-Latus Rectum ($p$)", "The radius of the orbit at a true anomaly of 90 and 270 degrees.", "BMW", Length/Time)
 
     def evaluate_orbital_equations(self, equation: sy.Eq, values_dict: dict)->float:
         """
@@ -58,10 +64,7 @@ class KeplerianEquations:
         """
 
         # Compute and insert p and r if needed
-        if self.p not in values_dict:
-            a_val = values_dict[self.a]
-            e_val = values_dict[self.e]
-            values_dict[self.p] = a_val * (1 - e_val**2)
+        values_dict[self.p] = self.semi_latus_rectum().expr.rhs.subs(values_dict).evalf()
         if self.r not in values_dict:
             a_val = values_dict[self.a]
             e_val = values_dict[self.e]
