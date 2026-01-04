@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "astrocalc"
+version = "0.1.0"
+description = "Orbital mechanics cheatsheet + interactive notebook tools"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy",
+  "scipy",
+  "sympy",
+  "matplotlib",
+  "ipykernel",
+  "ipywidgets",
+  "jupyter_contrib_nbextensions",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

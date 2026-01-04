@@ -1,8 +1,6 @@
 import os
 import subprocess
-import sys
-sys.path.append(os.path.dirname((os.path.dirname(__file__))))
-from equations.keplerian_equations import KeplerianEquations
+from astrocalc.equations.keplerian_equations import KeplerianEquations
 from sympy import latex
 import sympy as sy
 

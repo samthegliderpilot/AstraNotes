@@ -24,7 +24,7 @@ class EquationDefinitionHtmlRender:
     def __init__(self, equation : EquationDefinition):
         self.equation = equation
         self.result = widgets.HTML(value="")  # Empty initially
-        
+        self.eq_out = widgets.Output()
 
     def render(self):
         # Combine explanation and source for tooltip
@@ -36,11 +36,16 @@ class EquationDefinitionHtmlRender:
             tooltip=tooltip_text
         )
     
-        # Display name, equation, and result
         latex_str = sy.latex(self.equation.expr)
+
+        self.eq_out.clear_output(wait=True)
+        with self.eq_out:
+            from IPython.display import display, Math
+            display(Math(latex_str))
+
         box = widgets.VBox([
             label,
-            widgets.HTMLMath(value=f"${sy.latex(self.equation.expr)}$"),
+            self.eq_out,
             self.result
         ])
         box.layout = widgets.Layout(width='100%')
