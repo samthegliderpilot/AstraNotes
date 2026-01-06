@@ -115,6 +115,8 @@ class UnitRegistry:
     LENGTH = Dimension({"LENGTH": 1})
     TIME = Dimension({"TIME": 1})
     ANGLE = Dimension({"ANGLE": 1})
+    MASS = Dimension({"MASS": 1})
+
     DIMENSIONLESS = Dimension({})  # No components
     
     def __init__(self, dim_unit_maps: Dict[Dimension, List[Unit]]):
@@ -134,6 +136,28 @@ class UnitRegistry:
         raise ValueError(f"No unit found with abbreviation '{abbreviation}' for dimension '{dimension}'")
         
 
+    def _base_dim_from_str(self, s: str) -> Dimension:
+        """
+        Convert a base dimension name like 'LENGTH' / 'length' into the canonical
+        Dimension({"LENGTH": 1}) key used in dim_unit_maps.
+
+        Only supports base dimensions that exist in this registry.
+        """
+        key = s.strip().upper()
+        candidate = Dimension({key: 1})
+
+        # If exact key exists, use it
+        if candidate in self.dim_unit_maps:
+            return candidate
+
+        # Otherwise, try structural match (in case your stored Dimension keys are different objects)
+        for d in self.dim_unit_maps:
+            if isinstance(d, Dimension) and d == candidate:
+                return d
+
+        raise KeyError(f"No units registered for base dimension string: {s!r}")
+
+
     def get_unit_for_dimension(
         self,
         dimension: Dimension,
@@ -147,18 +171,24 @@ class UnitRegistry:
 
         # If this is a simple base dimension with power 1
         if len(components) == 1:
-            base_dim, power = next(iter(components.items()))
-            if power == 1:
-                # dimension itself is a base dimension key, so lookup directly
-                return selected_base_units[dimension]
+            base_key, power = next(iter(components.items()))
+            if power == 1 and isinstance(base_key, str):
+                base_dim = self._base_dim_from_str(base_key)
+                return selected_base_units[base_dim]
 
         # Otherwise, it's composite or has nontrivial powers
         numerators = []
         denominators = []
 
         for base_dim, power in components.items():
-            # lookup unit for each base dimension, fallback to registry's first unit
-            unit = selected_base_units.get(base_dim, self[base_dim][0])
+            if isinstance(base_dim, str):
+                base_dim = self._base_dim_from_str(base_dim)
+            elif isinstance(base_dim, Dimension):
+                base_dim = base_dim
+            else:
+                raise TypeError(f"Invalid dimension component key type: {type(base_dim).__name__}")
+
+            unit = selected_base_units[base_dim]
 
             if power > 0:
                 numerators.extend([unit] * power)
@@ -170,37 +200,39 @@ class UnitRegistry:
             return numerators[0]
         else:
             return CompositeUnit(numerators, denominators)
-
-
         
     def __getitem__(self, dim) -> List[Unit]:
         # Direct match (Dimension as key)
-        if dim in self.dim_unit_maps:
-            return self.dim_unit_maps[dim]
-
-        # Allow string keys like "Length"
-        if isinstance(dim, str):
-            # Try to find the Dimension whose only component is this string with power 1
-            for d in self.dim_unit_maps:
-                if isinstance(d, Dimension) and d.components == {dim: 1}:
-                    return self.dim_unit_maps[d]
-
-        # Allow structural dimension match (i.e., Dimension({"Length": 1}))
         if isinstance(dim, Dimension):
+            # Exact key match
+            if dim in self.dim_unit_maps:
+                return self.dim_unit_maps[dim]
+
+            # Structural match
             for d in self.dim_unit_maps:
-                if d == dim:
+                if isinstance(d, Dimension) and d == dim:
                     return self.dim_unit_maps[d]
 
-        raise KeyError(f"No units registered for dimension: {dim}")
+            raise KeyError(f"No units registered for dimension: {dim}")
+
+        # If passed a string like "Length" / "LENGTH"
+        if isinstance(dim, str):
+            base_dim = self._base_dim_from_str(dim)
+            return self.dim_unit_maps[base_dim]
+
+        raise TypeError(f"Unsupported key type for UnitRegistry: {type(dim).__name__}")
+
         
 unit_registry = UnitRegistry({
     UnitRegistry.LENGTH: [SimpleUnit("meter", "m", 1), SimpleUnit("kilometer", "km", 1000)],
     UnitRegistry.TIME: [SimpleUnit("second", "s", 1), SimpleUnit("day", "day", 86400)],
     UnitRegistry.ANGLE: [SimpleUnit("radian", "rad", 1), SimpleUnit("degree", "deg", 3.141592653589793 / 180)],
+    UnitRegistry.MASS: [SimpleUnit("kilogram", "kg", 1)],
     UnitRegistry.DIMENSIONLESS: [SimpleUnit("unitless", "", 1)],
 })
 
 Length = unit_registry.LENGTH
 Time = unit_registry.TIME
 Angle = unit_registry.ANGLE
+Mass = unit_registry.MASS
 Dimensionless = unit_registry.DIMENSIONLESS

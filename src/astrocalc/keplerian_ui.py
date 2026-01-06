@@ -1,10 +1,10 @@
 from typing import Callable, List, Dict
-from astrocalc.util.units import unit_registry, Length, Time, Angle, Dimensionless
+from astrocalc.util.units import unit_registry, Length, Time, Angle, Mass, Dimensionless
 import ipywidgets as widgets
 from astrocalc.util.units import Unit, Dimension
 from astrocalc.util.equation_helpers import EquationDefinitionHtmlRender
 from IPython.display import display
-
+import traceback
 class OrbitalMechanicsWidget:
     def __init__(self, orbital_mechanics, equation_renderers):
         self.orbital = orbital_mechanics
@@ -14,8 +14,10 @@ class OrbitalMechanicsWidget:
         self.length_dim = Length
         self.time_dim = Time
         self.angle_dim = Angle
+        self.mass_dim = Mass
 
         km_unit = unit_registry.get_unit_by_abbreviation(Length, "km")
+        kg_unit = unit_registry.get_unit_by_abbreviation(Mass, "kg")
         deg_unit = unit_registry.get_unit_by_abbreviation(Angle, "deg")
         sec_unit = unit_registry.get_unit_by_abbreviation(Time, "s")
         
@@ -38,6 +40,13 @@ class OrbitalMechanicsWidget:
             options = [(unit.name, unit) for unit in unit_registry[Angle]],
             value=deg_unit,
             description='Angle Unit:',
+            style={'description_width': 'initial'}
+        )
+
+        self.mass_unit = widgets.Dropdown(
+            options = [(unit.name, unit) for unit in unit_registry[Mass]],
+            value=kg_unit,
+            description='Mass Unit:',
             style={'description_width': 'initial'}
         )
 
@@ -69,18 +78,20 @@ class OrbitalMechanicsWidget:
         self.length_unit.observe(self.on_length_unit_change, names='value')
         self.angle_unit.observe(self.on_angle_unit_change, names='value')
         self.time_unit.observe(self.on_time_unit_change, names='value')
+        self.mass_unit.observe(self.on_mass_unit_change, names='value')
 
         # Evaluate button
         self.evaluate_button = widgets.Button(description="Evaluate Elements", button_style='primary')
-        self.evaluate_button.on_click(self.evaluate_and_display)
+        #self.evaluate_button.on_click(self.evaluate_and_display)
 
         # Store previous units for conversion tracking
         self.prev_length_unit = self.length_unit.value
         self.prev_angle_unit = self.angle_unit.value
         self.prev_time_unit = self.time_unit.value
+        self.prev_mass_unit = self.angle_unit.value
 
         # Layout
-        self.unit_selectors = widgets.HBox([self.length_unit, self.time_unit, self.angle_unit])
+        self.unit_selectors = widgets.HBox([self.length_unit, self.time_unit, self.angle_unit, self.mass_unit])
 
         for w in [self.a_float, self.mu_float, self.i_float, self.raan_float, self.arg_pe_float, self.nu_float, self.e_float_widget]:
             w.observe(self.on_input_change, names='value')
@@ -112,7 +123,7 @@ class OrbitalMechanicsWidget:
                 [self.a_unit_label, self.mu_unit_label]
             )
             self.prev_length_unit = new_unit
-            self.evaluate_and_display(self.equation_renderers)
+            self.evaluate_and_display()
     
     def on_angle_unit_change(self, change):
         if change['name'] == 'value':
@@ -125,7 +136,7 @@ class OrbitalMechanicsWidget:
                 [self.i_unit_label, self.raan_unit_label, self.arg_pe_unit_label, self.nu_unit_label]
             )
             self.prev_angle_unit = new_unit
-            self.evaluate_and_display(self.equation_renderers)
+            self.evaluate_and_display()
                 
     def on_time_unit_change(self, change):
         if change['name'] == 'value':
@@ -135,7 +146,17 @@ class OrbitalMechanicsWidget:
                 # Add any widgets that depend on time units here if needed
                 # Example placeholder; none currently in orbital elements needing conversion
                 self.prev_time_unit = new_unit
-                self.evaluate_and_display(self.equation_renderers)
+                self.evaluate_and_display()
+
+    def on_mass_unit_change(self, change):
+        if change['name'] == 'value':
+            old_unit: Unit = self.prev_mass_unit
+            new_unit: Unit = change['new']
+            if old_unit != new_unit:
+                # Add any widgets that depend on time units here if needed
+                # Example placeholder; none currently in orbital elements needing conversion
+                self.prev_mass_unit = new_unit
+                self.evaluate_and_display()
 
     def get_values_dict(self):
         # Convert all widget values to native units before returning
@@ -156,18 +177,21 @@ class OrbitalMechanicsWidget:
             unit_registry.LENGTH: self.length_unit.value,
             unit_registry.TIME: self.time_unit.value,
             unit_registry.ANGLE: self.angle_unit.value,
+            unit_registry.MASS : self.mass_unit.value,
             unit_registry.DIMENSIONLESS: Dimensionless
         }
 
-    def evaluate_and_display(self, renderers : List[EquationDefinitionHtmlRender]):
+    def evaluate_and_display(self):
         native_values = self.get_values_dict()
 
         display_units = self.get_selected_units()
 
         evaluated_results = {}
-        for eq_def in renderers:
+
+        for eq_def in self.equation_renderers:
             native_val = self.orbital.evaluate_orbital_equations(eq_def.equation.expr, native_values)
             evaluated_results[eq_def] = native_val
+
 
         display_values = {}
         for eq_def, native_val in evaluated_results.items():
