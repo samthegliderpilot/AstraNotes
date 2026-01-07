@@ -52,11 +52,12 @@ class OrbitalMechanicsWidget:
 
         # Orbital element input widgets
         # Length widgets
+        display_units = self.get_selected_units()
         self.a_float = widgets.FloatText(value=7000, description='a (semi-major axis):')
         self.a_widget, self.a_unit_label = self._make_labeled_widget(self.a_float, self.length_unit.value)
         
         self.mu_float = widgets.FloatText(value=398600, description='μ (GM):')
-        self.mu_widget, self.mu_unit_label = self._make_labeled_widget(self.mu_float, self.length_unit.value)
+        self.mu_widget, self.mu_unit_label = self._make_labeled_widget(self.mu_float, unit_registry.get_unit_for_dimension(Length*Length*Length/(Time*Time), display_units))
         
         # Angle widgets
         self.i_float = widgets.FloatText(value=0.1, description='i (inclination):')

@@ -49,7 +49,7 @@ class KeplerianEquations:
         """Returns symbolic form of escape velocity"""
         v_e = sy.sqrt(2 * self.mu / self.r)
         eq = sy.Eq(sy.Symbol('v_{esc}'), v_e)
-        return EquationDefinition(eq, "Escape Velocity ($v_e$)", "The speed a satellite needs to have to escape the central body it is arround", "Fundamentals of Astrodynamics: Bates, Muler, White: Page 35: Eq 1.9-2", Length/Time)
+        return EquationDefinition(eq, "Escape Velocity ($v_e$)", "The speed a satellite needs to have to escape the central body it is arround. Assumes a parabolic orbit.", "Fundamentals of Astrodynamics: Bates, Muler, White: Page 35: Eq 1.9-2", Length/Time)
 
     def semi_latus_rectum(self)->EquationDefinition:
         """Returns symbolic form of circular orbit velocity"""

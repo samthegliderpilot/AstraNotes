@@ -80,9 +80,9 @@ def generate_latex():
         kepler.semi_latus_rectum(),
     ]
     circularEquations = [equation_methods[0], equation_methods[1], equation_methods[4]]
-    ellipticalEquations = [equation_methods[2], equation_methods[6]]
-    parabolicEquations = [equation_methods[3]]
-    hyperbolicEquations = [equation_methods[5]]
+    ellipticalEquations = [equation_methods[2], equation_methods[6], equation_methods[3]]
+    parabolicEquations = [equation_methods[5]]
+    hyperbolicEquations = []
     latex_lines = [
 r"\documentclass[10pt]{article}",
 r"\usepackage[landscape, margin=1in]{geometry}",
