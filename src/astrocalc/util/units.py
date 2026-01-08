@@ -47,37 +47,54 @@ class SimpleUnit(Unit):
 #TODO: These unit types are still pretty new, once they are more settled
 #- Write doc
 #- Add helper functions to compose units with * and / and ** operators
-#- Handle powers of units better (think acceleration and length/time**2)
 class CompositeUnit(Unit):
     def __init__(self, numerator_units: List[Unit], denominator_units: List[Unit]):
         self.numerator_units = numerator_units
         self.denominator_units = denominator_units
-        
+
         name = "·".join(u.name for u in numerator_units)
         abbr = "·".join(u.abbreviation for u in numerator_units)
         if denominator_units:
             name += " per " + "·".join(u.name for u in denominator_units)
             abbr += "/" + "·".join(u.abbreviation for u in denominator_units)
 
-        super().__init__(name=name, abbreviation=abbr)  # Will override conversion methods
+        super().__init__(name=name, abbreviation=abbr)
+
+    def _scale_to_native(self) -> float:
+        """
+        Return multiplicative factor to convert from this composite unit to native.
+        """
+        scale = 1.0
+
+        # Numerator multiplies scale
+        for u in self.numerator_units:
+            if isinstance(u, SimpleUnit):
+                scale *= u.to_native_multiple
+            elif isinstance(u, CompositeUnit):
+                scale *= u._scale_to_native()
+            else:
+                # Fall back to actual conversion of 1.0 if something custom exists
+                scale *= u.to_native(1.0)
+
+        # Denominator divides scale
+        for u in self.denominator_units:
+            if isinstance(u, SimpleUnit):
+                scale /= u.to_native_multiple
+            elif isinstance(u, CompositeUnit):
+                scale /= u._scale_to_native()
+            else:
+                scale /= u.to_native(1.0)
+
+        return scale
 
     def to_native(self, value: float) -> float:
-        for u in self.numerator_units:
-            value = u.to_native(value)
-        for u in self.denominator_units:
-            value = u.from_native(value)
-        return value
+        return value * self._scale_to_native()
 
     def from_native(self, value: float) -> float:
-        for u in self.denominator_units:
-            value = u.to_native(value)
-        for u in self.numerator_units:
-            value = u.from_native(value)
-        return value
+        return value / self._scale_to_native()
 
     def __repr__(self):
         return f"<CompositeUnit {self.abbreviation}>"
-
 
 class Dimension:
     def __init__(self, components: Dict[str, int]):

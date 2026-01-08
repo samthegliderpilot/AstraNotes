@@ -21,6 +21,8 @@ class OrbitalMechanicsWidget:
         deg_unit = unit_registry.get_unit_by_abbreviation(Angle, "deg")
         sec_unit = unit_registry.get_unit_by_abbreviation(Time, "s")
         
+        self.mu_dimension = Length*Length*Length/(Time*Time)  # L^3 / T^2
+
         # Create dropdowns using Dimension.get_dropdown_options()
         self.length_unit = widgets.Dropdown(
             options = [(unit.name, unit) for unit in unit_registry[Length]],
@@ -57,8 +59,9 @@ class OrbitalMechanicsWidget:
         self.a_widget, self.a_unit_label = self._make_labeled_widget(self.a_float, self.length_unit.value)
         
         self.mu_float = widgets.FloatText(value=398600, description='μ (GM):')
-        self.mu_widget, self.mu_unit_label = self._make_labeled_widget(self.mu_float, unit_registry.get_unit_for_dimension(Length*Length*Length/(Time*Time), display_units))
-        
+        mu_unit = unit_registry.get_unit_for_dimension(self.mu_dimension, self.get_selected_units())
+        self.mu_widget, self.mu_unit_label = self._make_labeled_widget(self.mu_float, mu_unit) 
+
         # Angle widgets
         self.i_float = widgets.FloatText(value=0.1, description='i (inclination):')
         self.i_widget, self.i_unit_label = self._make_labeled_widget(self.i_float, self.angle_unit.value)
@@ -89,7 +92,7 @@ class OrbitalMechanicsWidget:
         self.prev_length_unit = self.length_unit.value
         self.prev_angle_unit = self.angle_unit.value
         self.prev_time_unit = self.time_unit.value
-        self.prev_mass_unit = self.angle_unit.value
+        self.prev_mass_unit = self.mass_unit.value
 
         # Layout
         self.unit_selectors = widgets.HBox([self.length_unit, self.time_unit, self.angle_unit, self.mass_unit])
@@ -101,7 +104,7 @@ class OrbitalMechanicsWidget:
         self.evaluate_button.disabled = not self.inputs_are_valid()
 
     def _make_labeled_widget(self, float_widget, unit: Unit):
-        label = widgets.Label(value=unit.abbreviation, layout=widgets.Layout(width='40px'))
+        label = widgets.Label(value=unit.abbreviation, layout=widgets.Layout(width='80px'))
         container = widgets.HBox([float_widget, label])
         return container, label
 
@@ -120,9 +123,17 @@ class OrbitalMechanicsWidget:
             self._update_widgets_for_unit_change(
                 old_unit,
                 new_unit,
-                [self.a_float, self.mu_float],
-                [self.a_unit_label, self.mu_unit_label]
+                [self.a_float],
+                [self.a_unit_label]
             )
+            self._update_mu_for_unit_change(
+                old_length_unit=old_unit,
+                old_time_unit=self.prev_time_unit,
+                new_length_unit=new_unit,
+                new_time_unit=self.time_unit.value,
+            )
+
+            # Now update the "prev" tracking
             self.prev_length_unit = new_unit
             self.evaluate_and_display()
     
@@ -144,8 +155,15 @@ class OrbitalMechanicsWidget:
             old_unit: Unit = self.prev_time_unit
             new_unit: Unit = change['new']
             if old_unit != new_unit:
-                # Add any widgets that depend on time units here if needed
-                # Example placeholder; none currently in orbital elements needing conversion
+                # Convert μ using old units -> new units
+                self._update_mu_for_unit_change(
+                    old_length_unit=self.prev_length_unit,
+                    old_time_unit=old_unit,
+                    new_length_unit=self.length_unit.value,
+                    new_time_unit=new_unit,
+                )
+
+                # Now update the "prev" tracking
                 self.prev_time_unit = new_unit
                 self.evaluate_and_display()
 
@@ -159,7 +177,39 @@ class OrbitalMechanicsWidget:
                 self.prev_mass_unit = new_unit
                 self.evaluate_and_display()
 
+    def _update_mu_for_unit_change(self, old_length_unit: Unit, old_time_unit: Unit,
+                                new_length_unit: Unit, new_time_unit: Unit):
+        """
+        Convert μ value + label from the old composite unit to the new composite unit.
+        """
+        old_display_units = {
+            unit_registry.LENGTH: old_length_unit,
+            unit_registry.TIME: old_time_unit,
+            unit_registry.ANGLE: self.prev_angle_unit,
+            unit_registry.MASS: self.prev_mass_unit,
+            unit_registry.DIMENSIONLESS: Dimensionless,
+        }
+
+        new_display_units = {
+            unit_registry.LENGTH: new_length_unit,
+            unit_registry.TIME: new_time_unit,
+            unit_registry.ANGLE: self.angle_unit.value,
+            unit_registry.MASS: self.mass_unit.value,
+            unit_registry.DIMENSIONLESS: Dimensionless,
+        }
+
+        old_mu_unit = unit_registry.get_unit_for_dimension(self.mu_dimension, old_display_units)
+        new_mu_unit = unit_registry.get_unit_for_dimension(self.mu_dimension, new_display_units)
+
+        # Always convert (even if abbreviations are equal)
+        native_value = old_mu_unit.to_native(self.mu_float.value)
+        self.mu_float.value = new_mu_unit.from_native(native_value)
+        self.mu_unit_label.value = new_mu_unit.abbreviation
+
+
     def get_values_dict(self):
+        display_units = self.get_selected_units()
+        mu_unit = unit_registry.get_unit_for_dimension(self.mu_dimension, display_units)
         # Convert all widget values to native units before returning
         values = {
             self.orbital.a: self.length_unit.value.to_native(self.a_float.value),
@@ -168,7 +218,7 @@ class OrbitalMechanicsWidget:
             self.orbital.raan: self.angle_unit.value.to_native(self.raan_float.value),
             self.orbital.arg_pe: self.angle_unit.value.to_native(self.arg_pe_float.value),
             self.orbital.true_anomaly: self.angle_unit.value.to_native(self.nu_float.value),
-            self.orbital.mu: self.length_unit.value.to_native(self.mu_float.value),
+            self.orbital.mu: mu_unit.to_native(self.mu_float.value), 
         }
         return values
 
@@ -179,7 +229,7 @@ class OrbitalMechanicsWidget:
             unit_registry.TIME: self.time_unit.value,
             unit_registry.ANGLE: self.angle_unit.value,
             unit_registry.MASS : self.mass_unit.value,
-            unit_registry.DIMENSIONLESS: Dimensionless
+            unit_registry.DIMENSIONLESS: unit_registry.get_unit_by_abbreviation(Dimensionless, "")
         }
 
     def evaluate_and_display(self):
