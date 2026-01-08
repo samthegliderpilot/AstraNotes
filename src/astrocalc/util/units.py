@@ -1,5 +1,23 @@
 from typing import List, Dict
 from abc import ABC, abstractmethod
+from collections import Counter
+
+_SUPERSCRIPTS = str.maketrans({
+    "0": "⁰",
+    "1": "¹",
+    "2": "²",
+    "3": "³",
+    "4": "⁴",
+    "5": "⁵",
+    "6": "⁶",
+    "7": "⁷",
+    "8": "⁸",
+    "9": "⁹",
+    "-": "⁻",
+})
+
+def _to_superscript(n: int) -> str:
+    return str(n).translate(_SUPERSCRIPTS)
 
 class Unit(ABC):
     """
@@ -20,6 +38,9 @@ class Unit(ABC):
 
     def __repr__(self):
         return f"<Unit {self.name} ({self.abbreviation})>"
+
+    def pretty_abbreviation(self) -> str:
+        return self.abbreviation
 
 class SimpleUnit(Unit):
     """
@@ -46,7 +67,6 @@ class SimpleUnit(Unit):
 
 #TODO: These unit types are still pretty new, once they are more settled
 #- Write doc
-#- Add helper functions to compose units with * and / and ** operators
 class CompositeUnit(Unit):
     def __init__(self, numerator_units: List[Unit], denominator_units: List[Unit]):
         self.numerator_units = numerator_units
@@ -95,6 +115,32 @@ class CompositeUnit(Unit):
 
     def __repr__(self):
         return f"<CompositeUnit {self.abbreviation}>"
+
+    def pretty_abbreviation(self) -> str:
+        """
+        Convert repeated unit multiplications into exponent form, e.g.
+        km·km·km/s·s -> km³/s²
+        """
+        num = Counter(u.abbreviation for u in self.numerator_units)
+        den = Counter(u.abbreviation for u in self.denominator_units)
+
+        def fmt(counter: Counter) -> str:
+            parts = []
+            for abbr, power in counter.items():
+                if power == 1:
+                    parts.append(abbr)
+                else:
+                    parts.append(f"{abbr}{_to_superscript(power)}")
+            return "·".join(parts) if parts else ""
+
+        num_str = fmt(num)
+        den_str = fmt(den)
+
+        if den_str:
+            if not num_str:
+                num_str = "1"
+            return f"{num_str}/{den_str}"
+        return num_str or "1"
 
 class Dimension:
     def __init__(self, components: Dict[str, int]):
@@ -238,6 +284,8 @@ class UnitRegistry:
             return self.dim_unit_maps[base_dim]
 
         raise TypeError(f"Unsupported key type for UnitRegistry: {type(dim).__name__}")
+
+
 
         
 unit_registry = UnitRegistry({
