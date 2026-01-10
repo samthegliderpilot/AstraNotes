@@ -48,7 +48,7 @@ class KeplerianEquations:
     def escape_velocity(self)->EquationDefinition:
         """Returns symbolic form of escape velocity"""
         v_e = sy.sqrt(2 * self.mu / self.r)
-        eq = sy.Eq(sy.Symbol('v_{esc}'), v_e)
+        eq = sy.Eq(sy.Symbol('v_{esc}', real=True, positive=True), v_e)
         return EquationDefinition(eq, "Escape Velocity ($v_e$)", "The speed a satellite needs to have to escape the central body it is arround. Assumes a parabolic orbit.", "Fundamentals of Astrodynamics: Bates, Muler, White: Page 35: Eq 1.9-2", Length/Time)
 
     def semi_latus_rectum(self)->EquationDefinition:
@@ -56,6 +56,11 @@ class KeplerianEquations:
         p = self.a * (1 - self.e**2)
         eq = sy.Eq(sy.Symbol('p'), p)
         return EquationDefinition(eq, "Semi-Latus Rectum ($p$)", "The radius of the orbit at a true anomaly of 90 and 270 degrees.", "Fundamentals of Astrodynamics: Bates, Muler, White: Page 24: Eq 1.5-6", Length)
+
+    def velocity_elliptical(self)->EquationDefinition:
+        vel = sy.sqrt(self.mu*2/self.r - self.mu/self.a)
+        eq = sy.Eq(sy.Symbol('v', real=True, positive=True), vel)
+        return EquationDefinition(eq, "Velocity (elliptical)", "The speed of a satellite in an elliptical orbit.", "Fundamentals of Astrodynamics and Applications: 4th Edition: Vallado: Page 2", Length/Time)
 
     def evaluate_orbital_equations(self, equation: sy.Eq, values_dict: dict)->float:
         """
