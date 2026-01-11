@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Callable, Dict, List
+import math
 
 import ipywidgets as widgets
 from IPython.display import display
@@ -26,6 +27,8 @@ class DimField:
 
 class OrbitalMechanicsWidget:
     def __init__(self, orbital_mechanics : KeplerianEquations, equation_renderers : List[EquationDefinitionHtmlRender]):
+        self._suppress_live_eval = False
+
         self.orbital = orbital_mechanics
         self.equation_renderers = equation_renderers
 
@@ -121,8 +124,10 @@ class OrbitalMechanicsWidget:
         )
 
         # ---- Evaluate button ----
-        self.evaluate_button = widgets.Button(description="Evaluate Elements", button_style="primary")
+        self.evaluate_button = widgets.Button(description="Reevaluate", button_style="primary")
         self.evaluate_button.disabled = not self.inputs_are_valid()
+
+        self.orbit_diagram_out = widgets.Output()
 
         # ---- Hook unit changes (single handler) ----
         self.length_unit.observe(self._on_any_unit_change, names="value")
@@ -190,27 +195,31 @@ class OrbitalMechanicsWidget:
     # Central unit application: inputs + equations
     # ------------------------------------------------------------------
     def apply_units(self, convert_values: bool = True) -> None:
-        env = self.get_selected_units()
+        self._suppress_live_eval = True
+        try:
+            env = self.get_selected_units()
 
-        # Update input fields (including dimensionless)
-        for name in self.field_order:
-            field = self.fields[name]
+            # Update input fields (including dimensionless)
+            for name in self.field_order:
+                field = self.fields[name]
 
-            old_unit = field.current_unit
-            new_unit = unit_registry.get_unit_for_dimension(field.dimension, env)
+                old_unit = field.current_unit
+                new_unit = unit_registry.get_unit_for_dimension(field.dimension, env)
 
-            if convert_values and old_unit != new_unit:
-                native_value = old_unit.to_native(field.widget.value)
-                field.widget.value = new_unit.from_native(native_value)
+                if convert_values and old_unit != new_unit:
+                    native_value = old_unit.to_native(field.widget.value)
+                    field.widget.value = new_unit.from_native(native_value)
 
-            field.unit_label.value = new_unit.pretty_abbreviation()
-            field.current_unit = new_unit
+                field.unit_label.value = new_unit.pretty_abbreviation()
+                field.current_unit = new_unit
 
-        # Update equation renderer unit caches
-        for renderer in self.equation_renderers:
-            dim = renderer.equation.dimension
-            unit = unit_registry.get_unit_for_dimension(dim, env)
-            renderer.set_display_unit(unit)
+            # Update equation renderer unit caches
+            for renderer in self.equation_renderers:
+                dim = renderer.equation.dimension
+                unit = unit_registry.get_unit_for_dimension(dim, env)
+                renderer.set_display_unit(unit)
+        finally:
+            self._suppress_live_eval = False
 
     def _on_any_unit_change(self, change) -> None:
         if change.get("name") != "value":
@@ -241,6 +250,10 @@ class OrbitalMechanicsWidget:
             display_val = renderer.convert_native_to_display(native_val)
             renderer.update_value(display_val)
 
+        # Update the diagram last, using the same native snapshot
+        self.update_orbit_diagram(native_values)
+
+
     # ------------------------------------------------------------------
     # Display
     # ------------------------------------------------------------------
@@ -255,18 +268,23 @@ class OrbitalMechanicsWidget:
     # ------------------------------------------------------------------
     def validate_widget(self, widget: widgets.FloatText, validate_func: Callable[[float], bool]) -> bool:
         val = widget.value
+        ok = True
+
         if val is None:
-            widget.layout.background_color = "lightpink"
-            return False
-        try:
-            if not validate_func(val):
-                widget.layout.background_color = "lightpink"
-                return False
-            widget.layout.background_color = ""
-            return True
-        except Exception:
-            widget.layout.background_color = "lightpink"
-            return False
+            ok = False
+        else:
+            try:
+                ok = bool(validate_func(val))
+            except Exception:
+                ok = False
+
+        if ok:
+            widget.remove_class("astro-invalid")
+        else:
+            widget.add_class("astro-invalid")
+
+        return ok
+
 
     def inputs_are_valid(self) -> bool:
         f = self.fields
@@ -287,4 +305,180 @@ class OrbitalMechanicsWidget:
         return all_valid
 
     def on_input_change(self, change) -> None:
-        self.evaluate_button.disabled = not self.inputs_are_valid()
+        valid = self.inputs_are_valid()
+        self.evaluate_button.disabled = not valid
+
+        if self._suppress_live_eval:
+            return
+
+        if valid:
+            self.evaluate_and_display()
+
+    def update_orbit_diagram(self, native_values: Dict) -> None:
+        """
+        Render the orbit diagram using native (SI) values.
+        Expects:
+        - a in native length units
+        - e dimensionless
+        - true_anomaly in radians
+        """
+        # Import here to avoid hard dependency at module import time
+        from IPython.display import display, HTML
+
+        a = float(native_values[self.orbital.a])
+        e = float(native_values[self.orbital.e])
+        nu = float(native_values[self.orbital.true_anomaly])  # radians
+
+        self.orbit_diagram_out.clear_output(wait=True)
+        with self.orbit_diagram_out:
+            # Simple regime guard for the 2.0 diagram
+            if not (0 <= e < 1):
+                display(HTML("<div style='color:#666; font-style:italic;'>"
+                            "Orbit diagram (2.0) currently supports only elliptical orbits (0 ≤ e &lt; 1)."
+                            "</div>"))
+                return
+
+            # orbit_diagram_svg is the drawsvg function we defined earlier
+            dwg = orbit_diagram_svg(a=a, e=e, nu=nu)
+            display(dwg)
+
+
+def orbit_diagram_svg(a, e, nu=None, *, nu_deg=None, size=520, margin=0.15,
+                      show_axes=True, show_labels=True):
+    """
+    Draw a simple orbital-geometry diagram as a vector SVG using drawsvg.
+
+    Parameters
+    ----------
+    a : float
+        Semi-major axis (same units as you want for the geometry)
+    e : float
+        Eccentricity (0 <= e < 1 for ellipse)
+    nu : float, optional
+        True anomaly in radians (use either nu or nu_deg)
+    nu_deg : float, optional
+        True anomaly in degrees (use either nu or nu_deg)
+    size : int
+        Canvas size in pixels (square)
+    margin : float
+        Fractional margin around the apoapsis distance
+    show_axes : bool
+        Draw faint x/y axes
+    show_labels : bool
+        Add labels for focus, periapsis, apoapsis, and ν
+
+    Returns
+    -------
+    drawsvg.Drawing
+        A drawing you can display in Jupyter by just returning it.
+    """
+    try:
+        import drawsvg as draw
+    except ImportError as ex:
+        raise ImportError(
+            "drawsvg is not installed. Try: pip install drawsvg"
+        ) from ex
+
+    if nu is None:
+        if nu_deg is None:
+            nu = 0.0
+        else:
+            nu = math.radians(nu_deg)
+
+    if not (0 <= e < 1):
+        raise ValueError("This simple diagram function currently supports only elliptical orbits (0 <= e < 1).")
+
+    # Basic ellipse geometry
+    b = a * math.sqrt(1 - e*e)
+    c = a * e  # focus distance from center
+
+    # We'll place the *right* focus at the origin (0,0). Then the ellipse center is at (-c, 0).
+    # Parametric ellipse with that shift:
+    #   x(t) = a cos t - c
+    #   y(t) = b sin t
+    # This makes periapsis at +x.
+    rp = a * (1 - e)
+    ra = a * (1 + e)
+
+    # True anomaly position (focus-origin polar form)
+    r = a * (1 - e*e) / (1 + e * math.cos(nu))
+    xnu = r * math.cos(nu)
+    ynu = r * math.sin(nu)
+
+    # Scaling to pixels
+    R = ra * (1 + margin)
+    scale = (size * 0.45) / R  # 0.45 leaves some breathing room
+
+    def tosvg(x, y):
+        # SVG y-axis goes down; invert so +y is up in our diagram.
+        return (x * scale, -y * scale)
+
+    dwg = draw.Drawing(size, size, origin='center')  # origin at canvas center (still SVG-y-down)
+
+    # Optional axes
+    if show_axes:
+        ax_len = R * scale
+        dwg.append(draw.Line(-ax_len, 0, ax_len, 0, stroke='rgba(0,0,0,0.15)', stroke_width=1))
+        dwg.append(draw.Line(0, -ax_len, 0, ax_len, stroke='rgba(0,0,0,0.15)', stroke_width=1))
+
+    # Draw ellipse (as a polyline for full control)
+    pts = []
+    N = 400
+    for i in range(N + 1):
+        t = 2 * math.pi * i / N
+        x = a * math.cos(t) - c
+        y = b * math.sin(t)
+        pts.append(tosvg(x, y))
+
+    # Build path from points
+    p = draw.Path(stroke='black', stroke_width=2, fill='none')
+    x0, y0 = pts[0]
+    p.M(x0, y0)
+    for (x, y) in pts[1:]:
+        p.L(x, y)
+    dwg.append(p)
+
+    # Focus (central body) at origin
+    fx, fy = tosvg(0, 0)
+    dwg.append(draw.Circle(fx, fy, 6, fill='black'))
+
+    # Periapsis and apoapsis points
+    px, py = tosvg(rp, 0)
+    ax, ay = tosvg(-ra, 0)
+
+    dwg.append(draw.Circle(px, py, 4, fill='black'))
+    dwg.append(draw.Circle(ax, ay, 4, fill='black'))
+
+    # Radius vector to current true anomaly
+    x1, y1 = tosvg(xnu, ynu)
+    dwg.append(draw.Line(fx, fy, x1, y1, stroke='black', stroke_width=2))
+
+    # A small arc to show ν (from +x axis to the radius vector)
+    arc_r = max(0.18 * a, 0.2 * rp)  # in "physics units"
+    arx0, ary0 = tosvg(arc_r, 0)
+    arx1, ary1 = tosvg(arc_r * math.cos(nu), arc_r * math.sin(nu))
+
+    # SVG arc flags: large_arc, sweep
+    # In our coordinates, increasing nu should sweep CCW (upwards), but SVG y is inverted; we already inverted y,
+    # so the geometry behaves like standard math.
+    large_arc = 1 if (nu % (2*math.pi)) > math.pi else 0
+    sweep = 1  # CCW in our inverted-y coordinate system tends to map correctly with sweep=1 here
+
+    arc = draw.Path(stroke='black', stroke_width=2, fill='none')
+    arc.M(arx0, ary0)
+    # Use circular arc: rx=ry=arc_r*scale
+    arc.A(arc_r * scale, arc_r * scale, 0, large_arc, sweep, arx1, ary1)
+    dwg.append(arc)
+
+    if show_labels:
+        # Simple labels (kept minimal)
+        dwg.append(draw.Text('Focus', 12, fx + 8, fy - 8))
+        dwg.append(draw.Text('Periapsis', 12, px + 6, py - 6))
+        dwg.append(draw.Text('Apoapsis', 12, ax - 60, ay - 6))
+
+        # ν label near the arc midpoint
+        mid = nu / 2
+        lx, ly = tosvg(arc_r * math.cos(mid), arc_r * math.sin(mid))
+        dwg.append(draw.Text('ν', 16, lx + 4, ly - 4))
+
+    return dwg

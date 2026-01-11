@@ -36,7 +36,7 @@ class EquationDefinition:
         self.source = source
         self.dimension = dimension
 
-    def evaluate_expr(self, subsDict : Dict[sy.Expr, float])->float:
+    def evaluate_expr(self, subsDict : Dict[sy.Basic, float])->float:
         return self.expr.rhs.subs(subsDict).evalf()
 
 

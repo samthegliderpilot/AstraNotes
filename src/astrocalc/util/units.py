@@ -232,6 +232,12 @@ class UnitRegistry:
         """
         components = dimension.components
 
+        components = dimension.components
+
+        #If dimensionless, return the chosen dimensionless unit
+        if not components:
+            return selected_base_units[self.DIMENSIONLESS]
+
         # If this is a simple base dimension with power 1
         if len(components) == 1:
             base_key, power = next(iter(components.items()))

@@ -16,6 +16,7 @@ dependencies = [
   "ipykernel",
   "ipywidgets",
   "jupyter_contrib_nbextensions",
+  "drawsvg",
 ]
 
 [tool.setuptools]
