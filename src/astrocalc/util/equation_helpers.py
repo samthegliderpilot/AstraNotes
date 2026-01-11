@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Optional
+from typing import List, Optional, Dict
 import ipywidgets as widgets
 import sympy as sy
 from IPython.display import display, Math
@@ -35,6 +35,9 @@ class EquationDefinition:
         self.explanation = explanation
         self.source = source
         self.dimension = dimension
+
+    def evaluate_expr(self, subsDict : Dict[sy.Expr, float])->float:
+        return self.expr.rhs.subs(subsDict).evalf()
 
 
 class EquationGroup:

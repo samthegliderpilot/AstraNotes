@@ -1,5 +1,5 @@
 import sympy as sy
-from astrocalc.util.units import Length, Time, Angle, Mass, Dimension
+from astrocalc.util.units import Length, Time, Angle, Mass, Dimension, Dimensionless
 from astrocalc.util.equation_helpers import EquationDefinition
 
 class KeplerianEquations:
@@ -62,7 +62,23 @@ class KeplerianEquations:
         eq = sy.Eq(sy.Symbol('v', real=True, positive=True), vel)
         return EquationDefinition(eq, "Velocity (elliptical)", "The speed of a satellite in an elliptical orbit.", "Fundamentals of Astrodynamics and Applications: 4th Edition: Vallado: Page 2", Length/Time)
 
-    def evaluate_orbital_equations(self, equation: sy.Eq, values_dict: dict)->float:
+    def sin_eccentric_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
+        sin_e = sy.sin(self.true_anomaly)*sy.sqrt(1-self.e**2)/(1+self.e*sy.cos(self.true_anomaly))
+        sin_e_sy = sy.Symbol('sin(E)', real=True)
+        return EquationDefinition(sy.Eq(sin_e_sy, sin_e), "Sin of Eccentric Anomaly", "The sin of the eccentric anomaly", "Fundamentals of Astrodynamics and Applications: 4th Edition: Vallado: Page 2", Dimensionless)
+
+    def cos_eccentric_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
+        cos_e = (self.e+sy.cos(self.true_anomaly))/(1+self.e*sy.cos(self.true_anomaly))
+        cos_e_sy = sy.Symbol('cos(E)', real=True)
+        return EquationDefinition(sy.Eq(cos_e_sy, cos_e), "Cos of Eccentric Anomaly", "The cos of the eccentric anomaly", "Fundamentals of Astrodynamics and Applications: 4th Edition: Vallado: Page 2", Dimensionless)
+
+    def eccentric_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
+        ecc_ano = sy.atan2(sy.sin(self.true_anomaly)*sy.sqrt(1-self.e**2), (self.e+sy.cos(self.true_anomaly)))
+        ecc_ano_sy = sy.Symbol('E', real=True)
+        return EquationDefinition(sy.Eq(ecc_ano_sy, ecc_ano), "Eccentric Anomaly (E)", "The sing-checked eccentric anomaly with respect to true anomaly", "Simplified from other expressions", Angle)
+
+
+    def evaluate_orbital_equations(self, equationDef: EquationDefinition, values_dict: dict)->float:
         """
         Evaluates symbolic equation numerically, using the values_dict
         and symbolic parameters from the OrbitalMechanics instance.
@@ -73,5 +89,5 @@ class KeplerianEquations:
         if self.r not in values_dict:
             values_dict[self.r] = self.orbital_radius().expr.rhs.subs(values_dict).evalf()
 
-        result = equation.rhs.subs(values_dict).evalf()
+        result = equationDef.evaluate_expr(values_dict)
         return result

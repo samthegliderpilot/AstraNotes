@@ -12,7 +12,8 @@ from astrocalc.util.units import (
     Unit, Dimension,
 )
 
-
+from astrocalc.util.equation_helpers import EquationDefinitionHtmlRender
+from astrocalc.equations.keplerian_equations import KeplerianEquations
 @dataclass
 class DimField:
     name: str
@@ -24,7 +25,7 @@ class DimField:
 
 
 class OrbitalMechanicsWidget:
-    def __init__(self, orbital_mechanics, equation_renderers):
+    def __init__(self, orbital_mechanics : KeplerianEquations, equation_renderers : List[EquationDefinitionHtmlRender]):
         self.orbital = orbital_mechanics
         self.equation_renderers = equation_renderers
 
@@ -236,7 +237,7 @@ class OrbitalMechanicsWidget:
         native_values = self.get_values_dict()
 
         for renderer in self.equation_renderers:
-            native_val = self.orbital.evaluate_orbital_equations(renderer.equation.expr, native_values)
+            native_val = self.orbital.evaluate_orbital_equations(renderer.equation, native_values)
             display_val = renderer.convert_native_to_display(native_val)
             renderer.update_value(display_val)
 
