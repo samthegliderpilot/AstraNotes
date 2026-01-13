@@ -1,6 +1,8 @@
 import sympy as sy
 from astrocalc.util.units import Length, Time, Angle, Mass, Dimension, Dimensionless
 from astrocalc.util.equation_helpers import EquationDefinition
+from astrocalc.util.source_ref import SourceRef
+from astrocalc.equations.common_sources import vallado_4e, bates_mueller_white
 
 class KeplerianEquations:
     def __init__(self):
@@ -19,63 +21,64 @@ class KeplerianEquations:
         """Returns symbolic form of vis-viva equation"""
         v = sy.sqrt(self.mu * (2/self.r - 1/self.a))
         eq = sy.Eq(sy.Symbol('v'), v)
-        return EquationDefinition(eq, "Vis-Viva", "The ballance of potential and kinetic energy of a satellite.", "Fundamentals of Astrodynamics and Applications: 4th Edition: Vallado: Page 27: Eq 1-22", Mass*Length*Length/(Time*Time))
+
+        return EquationDefinition(eq, "Vis-Viva", "The ballance of potential and kinetic energy of a satellite.", vallado_4e("p. 27, Eq. 1-22"), Length/Time)
 
     def mean_motion(self)->EquationDefinition:
         """Returns the mean motion of the orbit"""
         n = sy.sqrt(self.mu/self.a**3)
         eq = sy.Eq(sy.Symbol('n', real=True, positive=True), n)
-        return EquationDefinition(eq, "Mean Motion (n)", "The rate of mean motion", "Fundamentals of Astrodynamics and Applications: 4th Edition: Vallado: Page 45: Eq 2-5", Angle/Time)
+        return EquationDefinition(eq, "Mean Motion (n)", "The rate of mean motion", vallado_4e("p. 45: Eq 2-5"), Angle/Time)
     
     def orbital_period(self)->EquationDefinition:
         """Returns symbolic form of orbital period"""
         T = 2 * sy.pi * sy.sqrt(self.a**3 / self.mu)
         eq = sy.Eq(sy.Symbol('T'), T)
-        return EquationDefinition(eq, "Period (T)", "The time it takes for one orbit to go", "Fundamentals of Astrodynamics: Bates, Muler, White: Page 33: Eq 1.7-9", Time)
+        return EquationDefinition(eq, "Period (T)", "The time it takes for one orbit to go", bates_mueller_white("p 33: Eq 1.7-9"), Time)
     
     def orbital_radius(self)->EquationDefinition:
         """Returns symbolic form of orbital radius"""
         R = self.p / (1+self.e*sy.cos(self.true_anomaly))
         eq = sy.Eq(self.r, R)
-        return EquationDefinition(eq, "Radius (r)", "The true-anomaly varying radius of the orbit", "Fundamentals of Astrodynamics: Bates, Muler, White: Page 20: Eq 1.5-4", Length)
+        return EquationDefinition(eq, "Radius (r)", "The true-anomaly varying radius of the orbit", bates_mueller_white("p. 20: Eq 1.5-4"), Length)
                     
     def circular_velocity(self)->EquationDefinition:
         """Returns symbolic form of circular orbit velocity"""
         v_c = sy.sqrt(self.mu / self.r)
         eq = sy.Eq(sy.Symbol('v_c'), v_c)
-        return EquationDefinition(eq, "Circular Velocity ($v_{circ}$)", "The speed of a satellite in a circular orbit", "Fundamentals of Astrodynamics: Bates, Muler, White: Page 34: Eq 1.8-2", Length/Time)
+        return EquationDefinition(eq, "Circular Velocity ($v_{circ}$)", "The speed of a satellite in a circular orbit", bates_mueller_white('p. 34: Eq 1.8-2'), Length/Time)
 
     def escape_velocity(self)->EquationDefinition:
         """Returns symbolic form of escape velocity"""
         v_e = sy.sqrt(2 * self.mu / self.r)
         eq = sy.Eq(sy.Symbol('v_{esc}', real=True, positive=True), v_e)
-        return EquationDefinition(eq, "Escape Velocity ($v_e$)", "The speed a satellite needs to have to escape the central body it is arround. Assumes a parabolic orbit.", "Fundamentals of Astrodynamics: Bates, Muler, White: Page 35: Eq 1.9-2", Length/Time)
+        return EquationDefinition(eq, "Escape Velocity ($v_e$)", "The speed a satellite needs to have to escape the central body it is arround. Assumes a parabolic orbit.", bates_mueller_white('p. 35: Eq 1.9-2'), Length/Time)
 
     def semi_latus_rectum(self)->EquationDefinition:
         """Returns symbolic form of circular orbit velocity"""
         p = self.a * (1 - self.e**2)
         eq = sy.Eq(sy.Symbol('p'), p)
-        return EquationDefinition(eq, "Semi-Latus Rectum ($p$)", "The radius of the orbit at a true anomaly of 90 and 270 degrees.", "Fundamentals of Astrodynamics: Bates, Muler, White: Page 24: Eq 1.5-6", Length)
+        return EquationDefinition(eq, "Semi-Latus Rectum ($p$)", "The radius of the orbit at a true anomaly of 90 and 270 degrees.", bates_mueller_white('p. 24: Eq 1.5-6'), Length)
 
     def velocity_elliptical(self)->EquationDefinition:
         vel = sy.sqrt(self.mu*2/self.r - self.mu/self.a)
         eq = sy.Eq(sy.Symbol('v', real=True, positive=True), vel)
-        return EquationDefinition(eq, "Velocity (elliptical)", "The speed of a satellite in an elliptical orbit.", "Fundamentals of Astrodynamics and Applications: 4th Edition: Vallado: Page 2", Length/Time)
+        return EquationDefinition(eq, "Velocity (elliptical)", "The speed of a satellite in an elliptical orbit.", vallado_4e('p. 2'), Length/Time)
 
     def sin_eccentric_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
         sin_e = sy.sin(self.true_anomaly)*sy.sqrt(1-self.e**2)/(1+self.e*sy.cos(self.true_anomaly))
         sin_e_sy = sy.Symbol('sin(E)', real=True)
-        return EquationDefinition(sy.Eq(sin_e_sy, sin_e), "Sin of Eccentric Anomaly", "The sin of the eccentric anomaly", "Fundamentals of Astrodynamics and Applications: 4th Edition: Vallado: Page 2", Dimensionless)
+        return EquationDefinition(sy.Eq(sin_e_sy, sin_e), "Sin of Eccentric Anomaly", "The sin of the eccentric anomaly", vallado_4e('p. 2'), Dimensionless)
 
     def cos_eccentric_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
         cos_e = (self.e+sy.cos(self.true_anomaly))/(1+self.e*sy.cos(self.true_anomaly))
         cos_e_sy = sy.Symbol('cos(E)', real=True)
-        return EquationDefinition(sy.Eq(cos_e_sy, cos_e), "Cos of Eccentric Anomaly", "The cos of the eccentric anomaly", "Fundamentals of Astrodynamics and Applications: 4th Edition: Vallado: Page 2", Dimensionless)
+        return EquationDefinition(sy.Eq(cos_e_sy, cos_e), "Cos of Eccentric Anomaly", "The cos of the eccentric anomaly", vallado_4e("p. 2"), Dimensionless)
 
     def eccentric_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
         ecc_ano = sy.atan2(sy.sin(self.true_anomaly)*sy.sqrt(1-self.e**2), (self.e+sy.cos(self.true_anomaly)))
         ecc_ano_sy = sy.Symbol('E', real=True)
-        return EquationDefinition(sy.Eq(ecc_ano_sy, ecc_ano), "Eccentric Anomaly (E)", "The sing-checked eccentric anomaly with respect to true anomaly", "Simplified from other expressions", Angle)
+        return EquationDefinition(sy.Eq(ecc_ano_sy, ecc_ano), "Eccentric Anomaly (E)", "The quadrant-checked eccentric anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
 
 
     def evaluate_orbital_equations(self, equationDef: EquationDefinition, values_dict: dict)->float:

@@ -6,6 +6,7 @@ import sympy as sy
 from IPython.display import display, Math
 import math
 from astrocalc.util.units import Dimension, Unit
+from astrocalc.util.source_ref import SourceRef
 
 def _format_number(value: float, sigfigs: int = 6) -> str:
     """
@@ -29,12 +30,15 @@ def _format_number(value: float, sigfigs: int = 6) -> str:
     return f"{value:.{sigfigs}g}"
 
 class EquationDefinition:
-    def __init__(self, expr: sy.Eq, name: str, explanation: str, source: str, dimension: Dimension):
+    def __init__(self, expr: sy.Eq, name: str, explanation: str, source: SourceRef, dimension: Dimension):
         self.expr = expr
         self.name = name
         self.explanation = explanation
         self.source = source
         self.dimension = dimension
+
+    def source_text(self, full: bool = False) -> str:
+        return self.source.full() if full else self.source.compact()
 
     def evaluate_expr(self, subsDict : Dict[sy.Basic, float])->float:
         return self.expr.rhs.subs(subsDict).evalf()

@@ -146,7 +146,7 @@ r"\begin{multicols}{4}"
     with open(TEX_PATH, "w", encoding="utf-8") as f:
         f.write("\n".join(latex_lines))
 
-    print(f"[✓] LaTeX file written to {TEX_PATH}")
+    print(f"+ LaTeX file written to {TEX_PATH}")
 
 def compile_pdf():
     print("Compiling LaTeX to PDF...")
@@ -165,7 +165,7 @@ def clean_aux_files():
         file_path = os.path.join(BUILD_DIR, TEX_FILENAME.replace(".tex", ext))
         if os.path.exists(file_path):
             os.remove(file_path)
-            print(f"[−] Removed {file_path}")
+            print(f"[-] Removed {file_path}")
 
 def main():
     ensure_build_dir()
