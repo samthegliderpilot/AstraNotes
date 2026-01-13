@@ -1,6 +1,8 @@
 import os
 import subprocess
-from astrocalc.equations.keplerian_equations import KeplerianEquations
+from astrocalc.cheatsheet.keplerian_equations import KeplerianEquations
+from astrocalc.cheatsheet.render_latex_sources import render_sources_latex
+from astrocalc.util.equation_helpers import EquationGroup
 from sympy import latex
 import sympy as sy
 
@@ -141,6 +143,10 @@ r"\begin{multicols}{4}"
     for line in latex_table:
         latex_lines.append(line)
     latex_lines.append(r"\end{multicols}")
+    latex_lines.append(r"\clearpage")  # separate final page
+
+    # add sources content
+    latex_lines.extend(render_sources_latex([EquationGroup('', equation_methods)]))    
     latex_lines.append(r"\end{document}")
 
     with open(TEX_PATH, "w", encoding="utf-8") as f:

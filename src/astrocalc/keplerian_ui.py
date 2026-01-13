@@ -14,7 +14,7 @@ from astrocalc.util.units import (
 )
 
 from astrocalc.util.equation_helpers import EquationDefinitionHtmlRender
-from astrocalc.equations.keplerian_equations import KeplerianEquations
+from astrocalc.cheatsheet.keplerian_equations import KeplerianEquations
 @dataclass
 class DimField:
     name: str
