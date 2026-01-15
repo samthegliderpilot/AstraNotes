@@ -147,7 +147,7 @@ r"\begin{multicols}{4}"
     latex_lines.append(r"\clearpage")  # separate final page
 
     # add sources content
-    latex_lines.extend(render_sources_latex([EquationGroup('', equation_methods)]))    
+    latex_lines.extend(render_sources_latex([EquationGroup('', equation_methods)]))
     latex_lines.append(r"\end{document}")
 
     with open(TEX_PATH, "w", encoding="utf-8") as f:

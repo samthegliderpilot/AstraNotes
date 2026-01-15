@@ -17,6 +17,8 @@ dependencies = [
   "ipywidgets",
   "jupyter_contrib_nbextensions",
   "drawsvg",
+  "nbstripout",
+  "pre-commit
 ]
 
 [tool.setuptools]

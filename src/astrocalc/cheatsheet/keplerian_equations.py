@@ -29,19 +29,19 @@ class KeplerianEquations:
         n = sy.sqrt(self.mu/self.a**3)
         eq = sy.Eq(sy.Symbol('n', real=True, positive=True), n)
         return EquationDefinition(eq, "Mean Motion (n)", "The rate of mean motion", vallado_4e("p. 45: Eq 2-5"), Angle/Time)
-    
+
     def orbital_period(self)->EquationDefinition:
         """Returns symbolic form of orbital period"""
         T = 2 * sy.pi * sy.sqrt(self.a**3 / self.mu)
         eq = sy.Eq(sy.Symbol('T'), T)
         return EquationDefinition(eq, "Period (T)", "The time it takes for one orbit to go", bates_mueller_white("p 33: Eq 1.7-9"), Time)
-    
+
     def orbital_radius(self)->EquationDefinition:
         """Returns symbolic form of orbital radius"""
         R = self.p / (1+self.e*sy.cos(self.true_anomaly))
         eq = sy.Eq(self.r, R)
         return EquationDefinition(eq, "Radius (r)", "The true-anomaly varying radius of the orbit", bates_mueller_white("p. 20: Eq 1.5-4"), Length)
-                    
+
     def circular_velocity(self)->EquationDefinition:
         """Returns symbolic form of circular orbit velocity"""
         v_c = sy.sqrt(self.mu / self.r)

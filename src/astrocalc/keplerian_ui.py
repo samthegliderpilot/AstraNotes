@@ -147,7 +147,7 @@ class OrbitalMechanicsWidget:
     # ------------------------------------------------------------------
     def _make_labeled_widget(self, float_widget: widgets.FloatText, unit_abbr: str = "") -> tuple[widgets.Label, widgets.Widget]:
         label = widgets.HTML(value=f"<span style='font-size:1.0em'>{unit_abbr}</span>",
-                                layout=widgets.Layout(width="80px"))        
+                                layout=widgets.Layout(width="80px"))
         container = widgets.HBox([float_widget, label])
         return label, container
 

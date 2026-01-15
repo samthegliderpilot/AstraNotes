@@ -145,7 +145,7 @@ class CompositeUnit(Unit):
 class Dimension:
     def __init__(self, components: Dict[str, int]):
         self.components = {k: v for k, v in components.items() if v != 0}
-            
+
     def __mul__(self, other: 'Dimension') -> 'Dimension':
         result = self.components.copy()
         for dim, power in other.components.items():
@@ -181,7 +181,7 @@ class UnitRegistry:
     MASS = Dimension({"MASS": 1})
 
     DIMENSIONLESS = Dimension({})  # No components
-    
+
     def __init__(self, dim_unit_maps: Dict[Dimension, List[Unit]]):
         self.dim_unit_maps = dim_unit_maps
 
@@ -197,7 +197,7 @@ class UnitRegistry:
             if unit.abbreviation == abbreviation:
                 return unit
         raise ValueError(f"No unit found with abbreviation '{abbreviation}' for dimension '{dimension}'")
-        
+
 
     def _base_dim_from_str(self, s: str) -> Dimension:
         """
@@ -269,7 +269,7 @@ class UnitRegistry:
             return numerators[0]
         else:
             return CompositeUnit(numerators, denominators)
-        
+
     def __getitem__(self, dim) -> List[Unit]:
         # Direct match (Dimension as key)
         if isinstance(dim, Dimension):
@@ -293,7 +293,7 @@ class UnitRegistry:
 
 
 
-        
+
 unit_registry = UnitRegistry({
     UnitRegistry.LENGTH: [SimpleUnit("meter", "m", 1), SimpleUnit("kilometer", "km", 1000)],
     UnitRegistry.TIME: [SimpleUnit("second", "s", 1), SimpleUnit("day", "day", 86400)],

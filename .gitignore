@@ -10,5 +10,3 @@ build/
 *.log
 .mypy_cache/
 .venv/
-
-
