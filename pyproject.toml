@@ -8,17 +8,30 @@ version = "0.1.0"
 description = "Orbital mechanics cheatsheet + interactive notebook tools"
 readme = "README.md"
 requires-python = ">=3.10"
+
+# Core runtime deps (keep this lean)
 dependencies = [
   "numpy",
   "scipy",
   "sympy",
   "matplotlib",
+  "drawsvg",
+]
+
+[project.optional-dependencies]
+# Jupyter/notebook experience (what your repo uses day-to-day)
+notebook = [
   "ipykernel",
   "ipywidgets",
   "jupyter_contrib_nbextensions",
-  "drawsvg",
+]
+
+# Dev / test / repo hygiene tooling
+dev = [
+  "pytest",
+  "pytest-cov",
   "nbstripout",
-  "pre-commit
+  "pre-commit",
 ]
 
 [tool.setuptools]
@@ -26,3 +39,7 @@ package-dir = {"" = "src"}
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

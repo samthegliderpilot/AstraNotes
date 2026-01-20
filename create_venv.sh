@@ -2,12 +2,21 @@
 set -e
 
 python3 -m venv .venv
+# shellcheck disable=SC1091
 source .venv/bin/activate
 
 python -m pip install -U pip
-pip install -e .
 
+# Install editable + dev + notebook extras
+python -m pip install -e ".[dev,notebook]"
+
+# Register Jupyter kernel
 python -m ipykernel install --user --name astrocalc --display-name "Python (astrocalc)"
-nbstripout --install --attributes .gitattributes --keep-output false
-python -m pre_commit install | Out-Null
+
+# Strip notebook outputs on commit (repo-local git config)
+python -m nbstripout --install --attributes .gitattributes --keep-output false
+
+# Enable git hooks
+python -m pre_commit install >/dev/null
+
 echo "Done! Select kernel: Python (astrocalc)"
