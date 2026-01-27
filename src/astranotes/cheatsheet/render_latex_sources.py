@@ -1,9 +1,9 @@
-# astrocalc/cheatsheet/render_latex_sources.py
+# astranotes/cheatsheet/render_latex_sources.py
 from __future__ import annotations
 
 from typing import Iterable, List
 
-from astrocalc.cheatsheet.sources_index import build_sources_index, SourceSection
+from astranotes.cheatsheet.sources_index import build_sources_index, SourceSection
 
 
 def _latex_escape(s: str) -> str:

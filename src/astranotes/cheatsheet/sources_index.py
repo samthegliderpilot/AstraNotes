@@ -1,11 +1,11 @@
-# astrocalc/cheatsheet/sources_index.py
+# astranotes/cheatsheet/sources_index.py
 from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Tuple
 
-from astrocalc.util.source_ref import SourceRef
-from astrocalc.util.equation_helpers import EquationGroup, EquationDefinition
+from astranotes.util.source_ref import SourceRef
+from astranotes.util.equation_helpers import EquationGroup, EquationDefinition
 
 
 @dataclass(frozen=True, slots=True)

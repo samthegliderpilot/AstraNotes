@@ -3,8 +3,8 @@ import ipywidgets as widgets
 import sympy as sy
 from IPython.display import display, Math
 import math
-from astrocalc.util.units import Dimension, Unit
-from astrocalc.util.source_ref import SourceRef
+from astranotes.util.units import Dimension, Unit
+from astranotes.util.source_ref import SourceRef
 
 def _format_number(value: float, sigfigs: int = 6) -> str:
     """

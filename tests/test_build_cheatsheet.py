@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import astrocalc.build_cheatsheet as bc
+import astranotes.build_cheatsheet as bc
 
 
 def test_generate_latex_writes_tex_to_tempdir(tmp_path: Path, monkeypatch):

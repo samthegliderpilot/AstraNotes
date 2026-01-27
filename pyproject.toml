@@ -3,7 +3,7 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "astrocalc"
+name = "astranotes"
 version = "0.1.0"
 description = "Orbital mechanics cheatsheet + interactive notebook tools"
 readme = "README.md"

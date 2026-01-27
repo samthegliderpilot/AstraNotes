@@ -7,14 +7,14 @@ import math
 import ipywidgets as widgets
 from IPython.display import display
 
-from astrocalc.util.units import (
+from astranotes.util.units import (
     unit_registry,
     Length, Time, Angle, Mass, Dimensionless,
     Unit, Dimension,
 )
 
-from astrocalc.util.equation_helpers import EquationDefinitionHtmlRender
-from astrocalc.cheatsheet.keplerian_equations import KeplerianEquations
+from astranotes.util.equation_helpers import EquationDefinitionHtmlRender
+from astranotes.cheatsheet.keplerian_equations import KeplerianEquations
 @dataclass
 class DimField:
     name: str

@@ -1,8 +1,8 @@
 import sympy as sy
 
-from astrocalc.cheatsheet.keplerian_equations import KeplerianEquations
-from astrocalc.util.equation_helpers import EquationGroup
-from astrocalc.cheatsheet.render_latex_sources import render_sources_latex
+from astranotes.cheatsheet.keplerian_equations import KeplerianEquations
+from astranotes.util.equation_helpers import EquationGroup
+from astranotes.cheatsheet.render_latex_sources import render_sources_latex
 
 
 def _make_equation_groups():

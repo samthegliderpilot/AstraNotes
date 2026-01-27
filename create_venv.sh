@@ -11,7 +11,7 @@ python -m pip install -U pip
 python -m pip install -e ".[dev,notebook]"
 
 # Register Jupyter kernel
-python -m ipykernel install --user --name astrocalc --display-name "Python (astrocalc)"
+python -m ipykernel install --user --name astranotes --display-name "Python (astranotes)"
 
 # Strip notebook outputs on commit (repo-local git config)
 python -m nbstripout --install --attributes .gitattributes --keep-output false
@@ -19,4 +19,4 @@ python -m nbstripout --install --attributes .gitattributes --keep-output false
 # Enable git hooks
 python -m pre_commit install >/dev/null
 
-echo "Done! Select kernel: Python (astrocalc)"
+echo "Done! Select kernel: Python (astranotes)"

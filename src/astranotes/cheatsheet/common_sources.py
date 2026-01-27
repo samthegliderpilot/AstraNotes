@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Optional
-from astrocalc.util.source_ref import SourceRef
+from astranotes.util.source_ref import SourceRef
 
 def vallado_4e(location: str, notes: Optional[str] = None) -> SourceRef:
     return SourceRef(

@@ -1,7 +1,7 @@
 import math
 import pytest
 
-from astrocalc.cheatsheet.keplerian_equations import KeplerianEquations
+from astranotes.cheatsheet.keplerian_equations import KeplerianEquations
 
 
 def _native_inputs(orb: KeplerianEquations, *, a_m, e, nu_rad, mu_m3_s2):

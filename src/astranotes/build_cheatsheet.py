@@ -1,8 +1,8 @@
 import os
 import subprocess
-from astrocalc.cheatsheet.keplerian_equations import KeplerianEquations
-from astrocalc.cheatsheet.render_latex_sources import render_sources_latex
-from astrocalc.util.equation_helpers import EquationGroup
+from astranotes.cheatsheet.keplerian_equations import KeplerianEquations
+from astranotes.cheatsheet.render_latex_sources import render_sources_latex
+from astranotes.util.equation_helpers import EquationGroup
 from sympy import latex
 import sympy as sy
 
@@ -111,7 +111,7 @@ r"\begin{document}",
 # Custom title block - smaller font, top-left, one line
 r"{\small",
 r"\noindent",
-r"\textbf{AstroCalc Cheat Sheet: Keplerian Orbits} \quad --- \quad \textit{SamTheGliderPilot}",
+r"\textbf{AstraNotes Cheat Sheet: Keplerian Orbits} \quad --- \quad \textit{SamTheGliderPilot}",
 r"}",
 
 r"\vspace{1em}  % small vertical space before the rest",

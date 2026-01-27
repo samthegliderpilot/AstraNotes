@@ -1,7 +1,7 @@
 import math
 import pytest
 
-from astrocalc.util.units import (
+from astranotes.util.units import (
     SimpleUnit,
     CompositeUnit,
     Dimension,

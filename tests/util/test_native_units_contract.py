@@ -1,7 +1,7 @@
 import math
 import pytest
 
-from astrocalc.util.units import unit_registry, Length, Time, Angle, Mass, Dimensionless
+from astranotes.util.units import unit_registry, Length, Time, Angle, Mass, Dimensionless
 
 
 def test_native_base_units_are_expected():

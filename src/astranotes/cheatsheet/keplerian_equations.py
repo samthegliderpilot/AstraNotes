@@ -1,8 +1,8 @@
 import sympy as sy
-from astrocalc.util.units import Length, Time, Angle, Mass, Dimension, Dimensionless
-from astrocalc.util.equation_helpers import EquationDefinition
-from astrocalc.util.source_ref import SourceRef
-from astrocalc.cheatsheet.common_sources import vallado_4e, bates_mueller_white
+from astranotes.util.units import Length, Time, Angle, Mass, Dimension, Dimensionless
+from astranotes.util.equation_helpers import EquationDefinition
+from astranotes.util.source_ref import SourceRef
+from astranotes.cheatsheet.common_sources import vallado_4e, bates_mueller_white
 
 class KeplerianEquations:
     def __init__(self):

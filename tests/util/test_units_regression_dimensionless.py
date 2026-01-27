@@ -1,6 +1,6 @@
 import pytest
 
-from astrocalc.util.units import (
+from astranotes.util.units import (
     unit_registry,
     Length,
     Time,

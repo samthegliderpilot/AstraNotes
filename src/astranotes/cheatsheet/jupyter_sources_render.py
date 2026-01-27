@@ -1,11 +1,11 @@
-# astrocalc/cheatsheet/jupyter_sources_render.py
+# astranotes/cheatsheet/jupyter_sources_render.py
 from __future__ import annotations
 
 import ipywidgets as widgets
 from html import escape
 from typing import Iterable, Optional
 
-from astrocalc.cheatsheet.sources_index import (
+from astranotes.cheatsheet.sources_index import (
     SourceSection,
     build_sources_index,
 )
