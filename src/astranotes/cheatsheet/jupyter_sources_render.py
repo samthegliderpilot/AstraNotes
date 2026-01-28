@@ -10,31 +10,24 @@ from astranotes.cheatsheet.sources_index import (
     build_sources_index,
 )
 
+
 def render_sources_jupyter(
     equation_groups,
     *,
     title: str = "Sources",
     include_group_name: bool = True,
     use_full_width: bool = True,
+    preamble_html: Optional[str] = None,
+    stamp_html: Optional[str] = None,
 ) -> widgets.VBox:
     """
     Render a sources "page" for Jupyter, grouped by SourceWork and listing
     per-equation entries (equation name + optional [group] + location/notes).
 
-    Parameters
-    ----------
-    equation_groups:
-        Iterable[EquationGroup]
-    title:
-        Header text for the section.
-    include_group_name:
-        Include the equation-group tag like [Elliptical Orbit Equations] in each bullet.
-    use_full_width:
-        Set VBox width to 100%.
-
-    Returns
-    -------
-    widgets.VBox
+    preamble_html:
+        Optional HTML shown under the title (e.g., an atan2 note).
+    stamp_html:
+        Optional HTML shown near the title (e.g., version + generated timestamp).
     """
     sections = build_sources_index(
         equation_groups,
@@ -47,6 +40,8 @@ def render_sources_jupyter(
         title=title,
         include_group_name=include_group_name,
         use_full_width=use_full_width,
+        preamble_html=preamble_html,
+        stamp_html=stamp_html,
     )
 
 
@@ -56,6 +51,8 @@ def render_sources_index_jupyter(
     title: str = "Sources",
     include_group_name: bool = True,
     use_full_width: bool = True,
+    preamble_html: Optional[str] = None,
+    stamp_html: Optional[str] = None,
 ) -> widgets.VBox:
     """
     Render a prebuilt sources index (output of build_sources_index) as a Jupyter widget.
@@ -64,6 +61,25 @@ def render_sources_index_jupyter(
 
     if title:
         blocks.append(widgets.HTML(f"<h3 style='margin-top:10px'>{escape(title)}</h3>"))
+
+    if stamp_html:
+        # Muted, compact "meta" line (version, generated timestamp, etc.)
+        blocks.append(
+            widgets.HTML(
+                "<div style='margin-top:-6px; margin-bottom:8px; color:#666; font-size:0.9em;'>"
+                f"{stamp_html}"
+                "</div>"
+            )
+        )
+
+    if preamble_html:
+        blocks.append(
+            widgets.HTML(
+                "<div style='margin-bottom:10px; color:#333;'>"
+                f"{preamble_html}"
+                "</div>"
+            )
+        )
 
     for sec in sections:
         w = sec.work
