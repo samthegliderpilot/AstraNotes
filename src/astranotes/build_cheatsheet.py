@@ -5,9 +5,12 @@ from astranotes.cheatsheet.render_latex_sources import render_sources_latex
 from astranotes.util.equation_helpers import EquationGroup
 from sympy import latex
 import sympy as sy
+from datetime import datetime, timezone
+import importlib.metadata as md
+from pathlib import Path
 
 # === CONFIG ===
-BUILD_DIR = os.path.join(os.path.dirname(__file__), "build")
+BUILD_DIR = Path(os.path.dirname(__file__)).parent.parent / "build"
 TEX_FILENAME = "keplerian_cheatsheet.tex"
 PDF_FILENAME = "keplerian_cheatsheet.pdf"
 TEX_PATH = os.path.join(BUILD_DIR, TEX_FILENAME)
@@ -29,40 +32,36 @@ def generate_column_equation_table(equations):
         eq = eqFull.expr
         name = eqFull.name
         eq_latex = sy.latex(eq)
-        lines.append(r"\noindent {\footnotesize \textbf{\mbox{" + name + r"}}}\\")
+        lines.append(r"\noindent{\footnotesize\textbf{" + name + r"}}")
+        lines.append(r"\vspace{-0.4em}")
         lines.append(r"\[\small " + eq_latex + r"\]")
-        lines.append(r"\vspace{0.25em}")
-        # lines.append(r"\begin{center}\small")
-        # lines.append(r"\[")
-        # lines.append(eq_latex)
-        # lines.append(r"\]")
-        # lines.append(r"\end{center}")
-        # lines.append(r"\vspace{0.5em}")
-
     return "\n".join(lines)
 
-def build_full_equation_table(circular, elliptical, parabolic, hyperbolic):
-    max_len = max(len(circular), len(elliptical), len(parabolic), len(hyperbolic))
+def build_full_equation_table(circularAndElliptical, parabolic, hyperbolic):
+    half_closed = round(len(circularAndElliptical)/2)
+    max_len = max(half_closed, len(parabolic), len(hyperbolic))
 
     def pad_col(col):
         return col + [("", "")] * (max_len - len(col))
 
-    # circular = pad_col(circular)
-    # elliptical = pad_col(elliptical)
-    # parabolic = pad_col(parabolic)
-    # hyperbolic = pad_col(hyperbolic)
-
     def wrap_minipage(content):
-        return r"\begin{minipage}[t]{\linewidth}" + "\n" + content + "\n" + r"\end{minipage}"
+        return (
+            r"\begin{minipage}[t]{\linewidth}"
+            r"\setlength{\abovedisplayskip}{2pt}"
+            r"\setlength{\belowdisplayskip}{2pt}"
+            "\n" + content + "\n"
+            r"\end{minipage}"
+        )
 
-    col1 = wrap_minipage(generate_column_equation_table(circular))
-    col2 = wrap_minipage(generate_column_equation_table(elliptical))
+
+    col1 = wrap_minipage(generate_column_equation_table(circularAndElliptical[0:half_closed]))
+    col2 = wrap_minipage(generate_column_equation_table(circularAndElliptical[half_closed:]))
     col3 = wrap_minipage(generate_column_equation_table(parabolic))
     col4 = wrap_minipage(generate_column_equation_table(hyperbolic))
 
     latex_lines = [
         r"\begin{tabular}{p{0.6\linewidth}@{\hspace{5.5em}} p{0.6\linewidth}@{\hspace{5.5em}} p{0.6\linewidth}@{\hspace{5.5em}} p{0.6\linewidth}}",
-    r"\multicolumn{1}{c}{\textbf{\small Circular}} & \multicolumn{1}{c}{\textbf{\small Elliptical}} & \multicolumn{1}{c}{\textbf{\small Parabolic}} & \multicolumn{1}{c}{\textbf{\small Hyperbolic}} \\[0.5em]",
+        r"\multicolumn{1}{c}{\textbf{\small Circular}} & \multicolumn{1}{c}{\textbf{\small and Elliptical}} & \multicolumn{1}{c}{\textbf{\small Parabolic}} & \multicolumn{1}{c}{\textbf{\small Hyperbolic}} \\[0.5em]",
                     col1 + r" & " + col2 + r" & " + col3 + r" & " + col4 + r" \\",
         r"\end{tabular}"
     ]
@@ -71,6 +70,10 @@ def build_full_equation_table(circular, elliptical, parabolic, hyperbolic):
 
 def generate_latex():
     kepler = KeplerianEquations()
+
+    version = md.version("astranotes")  # or whatever your [project].name is
+    generated_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
+    footer_text = f"AstraNotes v{version} — Generated {generated_utc}"
 
     equation_methods = [
         kepler.vis_viva(),
@@ -86,8 +89,7 @@ def generate_latex():
         kepler.eccentric_anomaly_wrt_true_anomaly(),
         kepler.velocity_elliptical(),
     ]
-    circularEquations = [equation_methods[0], equation_methods[1], equation_methods[4]]
-    ellipticalEquations = [equation_methods[2], equation_methods[6], equation_methods[3], equation_methods[7], equation_methods[8], equation_methods[9], equation_methods[10], equation_methods[7]]
+    circularAndEllipticalEquations = [equation_methods[0], equation_methods[1], equation_methods[4], equation_methods[2], equation_methods[6], equation_methods[3], equation_methods[7], equation_methods[8], equation_methods[9], equation_methods[10], equation_methods[7]]
     parabolicEquations = [equation_methods[5]]
     hyperbolicEquations = []
     latex_lines = [
@@ -96,6 +98,13 @@ r"\usepackage[landscape, margin=1in]{geometry}",
 r"\usepackage{amsmath}",
 r"\usepackage{titlesec}",
 r"\usepackage{multicol}",
+r"\usepackage{fancyhdr}",
+r"\usepackage{lastpage}",  # optional, only if you want Page X of Y
+r"\pagestyle{fancy}",
+r"\fancyhf{}",  # clear header/footer
+rf"\fancyfoot[C]{{\footnotesize {footer_text}}}",
+r"\renewcommand{\headrulewidth}{0pt}",
+r"\renewcommand{\footrulewidth}{0.4pt}",
 # Remove spacing from section titles if desired
 r"\titlespacing*{\section}{0pt}{*0}{*0}",
 r"\titlespacing*{\subsection}{0pt}{*0}{*0}",
@@ -107,7 +116,7 @@ r"\setlength{\abovedisplayskip}{5pt}",
 r"\setlength{\belowdisplayskip}{5pt}",
 
 r"\begin{document}",
-
+r"\vspace*{-1.5em}",
 # Custom title block - smaller font, top-left, one line
 r"{\small",
 r"\noindent",
@@ -133,8 +142,7 @@ r"\begin{multicols}{4}"
     #     latex_lines.append(r"\end{align*}")
     #     latex_lines.append("")
     latex_table = build_full_equation_table(
-        circularEquations,
-        ellipticalEquations,
+        circularAndEllipticalEquations,
         parabolicEquations,
         hyperbolicEquations
     )
@@ -148,6 +156,10 @@ r"\begin{multicols}{4}"
 
     # add sources content
     latex_lines.extend(render_sources_latex([EquationGroup('', equation_methods)]))
+    latex_lines.append(r"\vspace{0.75em}")
+    latex_lines.append(r"\noindent{\footnotesize\textbf{Note on atan2:} "
+                    r"This sheet uses $\mathrm{atan2}(y, x)$ (sine term/$y$ first, cosine term/$x$ second) "
+                    r"to preserve quadrant.}")
     latex_lines.append(r"\end{document}")
 
     with open(TEX_PATH, "w", encoding="utf-8") as f:

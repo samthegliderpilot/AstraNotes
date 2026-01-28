@@ -17,15 +17,15 @@ def render_sources_jupyter(
     title: str = "Sources",
     include_group_name: bool = True,
     use_full_width: bool = True,
-    preamble_html: Optional[str] = None,
+    footer_html: Optional[str] = None,
     stamp_html: Optional[str] = None,
 ) -> widgets.VBox:
     """
     Render a sources "page" for Jupyter, grouped by SourceWork and listing
     per-equation entries (equation name + optional [group] + location/notes).
 
-    preamble_html:
-        Optional HTML shown under the title (e.g., an atan2 note).
+    footer_html:
+        Optional HTML shown after all sources (e.g., atan2 note).
     stamp_html:
         Optional HTML shown near the title (e.g., version + generated timestamp).
     """
@@ -40,7 +40,7 @@ def render_sources_jupyter(
         title=title,
         include_group_name=include_group_name,
         use_full_width=use_full_width,
-        preamble_html=preamble_html,
+        footer_html=footer_html,
         stamp_html=stamp_html,
     )
 
@@ -51,7 +51,7 @@ def render_sources_index_jupyter(
     title: str = "Sources",
     include_group_name: bool = True,
     use_full_width: bool = True,
-    preamble_html: Optional[str] = None,
+    footer_html: Optional[str] = None,
     stamp_html: Optional[str] = None,
 ) -> widgets.VBox:
     """
@@ -62,29 +62,9 @@ def render_sources_index_jupyter(
     if title:
         blocks.append(widgets.HTML(f"<h3 style='margin-top:10px'>{escape(title)}</h3>"))
 
-    if stamp_html:
-        # Muted, compact "meta" line (version, generated timestamp, etc.)
-        blocks.append(
-            widgets.HTML(
-                "<div style='margin-top:-6px; margin-bottom:8px; color:#666; font-size:0.9em;'>"
-                f"{stamp_html}"
-                "</div>"
-            )
-        )
-
-    if preamble_html:
-        blocks.append(
-            widgets.HTML(
-                "<div style='margin-bottom:10px; color:#333;'>"
-                f"{preamble_html}"
-                "</div>"
-            )
-        )
-
     for sec in sections:
         w = sec.work
 
-        # Work header line
         header_parts = []
         if w.authors:
             header_parts.append(escape(w.authors))
@@ -99,7 +79,6 @@ def render_sources_index_jupyter(
 
         header_html = " — ".join(header_parts)
 
-        # Entries list
         li_parts = []
         for e in sec.entries:
             left = escape(e.equation_name)
@@ -129,6 +108,24 @@ def render_sources_index_jupyter(
         )
 
         blocks.append(widgets.HTML(block_html))
+
+    if footer_html:
+        blocks.append(
+            widgets.HTML(
+                "<div style='margin-top:10px; padding-top:8px; border-top:1px solid #ddd; color:#333;'>"
+                f"{footer_html}"
+                "</div>"
+            )
+        )
+
+    if stamp_html:
+        blocks.append(
+            widgets.HTML(
+                "<div style='margin-top:-6px; margin-bottom:8px; color:#666; font-size:0.9em;'>"
+                f"{stamp_html}"
+                "</div>"
+            )
+        )
 
     box = widgets.VBox(blocks)
     if use_full_width:

@@ -28,37 +28,37 @@ class KeplerianEquations:
         """Returns the mean motion of the orbit"""
         n = sy.sqrt(self.mu/self.a**3)
         eq = sy.Eq(sy.Symbol('n', real=True, positive=True), n)
-        return EquationDefinition(eq, "Mean Motion (n)", "The rate of mean motion", vallado_4e("p. 45: Eq 2-5"), Angle/Time)
+        return EquationDefinition(eq, "Mean Motion", "The rate of mean motion", vallado_4e("p. 45: Eq 2-5"), Angle/Time)
 
     def orbital_period(self)->EquationDefinition:
         """Returns symbolic form of orbital period"""
         T = 2 * sy.pi * sy.sqrt(self.a**3 / self.mu)
         eq = sy.Eq(sy.Symbol('T'), T)
-        return EquationDefinition(eq, "Period (T)", "The time it takes for one orbit to go", bates_mueller_white("p 33: Eq 1.7-9"), Time)
+        return EquationDefinition(eq, "Period", "The time it takes for one orbit to go", bates_mueller_white("p 33: Eq 1.7-9"), Time)
 
     def orbital_radius(self)->EquationDefinition:
         """Returns symbolic form of orbital radius"""
         R = self.p / (1+self.e*sy.cos(self.true_anomaly))
         eq = sy.Eq(self.r, R)
-        return EquationDefinition(eq, "Radius (r)", "The true-anomaly varying radius of the orbit", bates_mueller_white("p. 20: Eq 1.5-4"), Length)
+        return EquationDefinition(eq, "Radius", "The true-anomaly varying radius of the orbit", bates_mueller_white("p. 20: Eq 1.5-4"), Length)
 
     def circular_velocity(self)->EquationDefinition:
         """Returns symbolic form of circular orbit velocity"""
         v_c = sy.sqrt(self.mu / self.r)
         eq = sy.Eq(sy.Symbol('v_c'), v_c)
-        return EquationDefinition(eq, "Circular Velocity ($v_{circ}$)", "The speed of a satellite in a circular orbit", bates_mueller_white('p. 34: Eq 1.8-2'), Length/Time)
+        return EquationDefinition(eq, "Velocity (circular)", "The speed of a satellite in a circular orbit", bates_mueller_white('p. 34: Eq 1.8-2'), Length/Time)
 
     def escape_velocity(self)->EquationDefinition:
         """Returns symbolic form of escape velocity"""
         v_e = sy.sqrt(2 * self.mu / self.r)
         eq = sy.Eq(sy.Symbol('v_{esc}', real=True, positive=True), v_e)
-        return EquationDefinition(eq, "Escape Velocity ($v_e$)", "The speed a satellite needs to have to escape the central body it is arround. Assumes a parabolic orbit.", bates_mueller_white('p. 35: Eq 1.9-2'), Length/Time)
+        return EquationDefinition(eq, "Escape Velocity", "The speed a satellite needs to have to escape the central body it is arround. Assumes a parabolic orbit.", bates_mueller_white('p. 35: Eq 1.9-2'), Length/Time)
 
     def semi_latus_rectum(self)->EquationDefinition:
         """Returns symbolic form of circular orbit velocity"""
         p = self.a * (1 - self.e**2)
         eq = sy.Eq(sy.Symbol('p'), p)
-        return EquationDefinition(eq, "Semi-Latus Rectum ($p$)", "The radius of the orbit at a true anomaly of 90 and 270 degrees.", bates_mueller_white('p. 24: Eq 1.5-6'), Length)
+        return EquationDefinition(eq, "Semi-Latus Rectum", "The radius of the orbit at a true anomaly of 90 and 270 degrees.", bates_mueller_white('p. 24: Eq 1.5-6'), Length)
 
     def velocity_elliptical(self)->EquationDefinition:
         vel = sy.sqrt(self.mu*2/self.r - self.mu/self.a)

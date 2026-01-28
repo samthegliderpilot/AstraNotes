@@ -1,0 +1,7 @@
+For 1.0
+- More equations
+- Spacing/formating (in pdf especally, but might be good enough)
+- Combine circular and elliptical in notebook
+- Fix bugs
+-- True anomaly arc in notebook diagram is backwards
+- Make a pipeline for deploying notebook

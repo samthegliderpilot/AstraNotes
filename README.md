@@ -40,12 +40,12 @@ Clone the repository and run the bootstrap script for your platform:
 
 PowerShell (Windows):
 ```
-./setup_venv.ps1
+./create_venv.ps1
 ```
 
 Bash (Linux/macOS):
 ```
-./setup_venv.sh
+./create_venv.sh
 ```
 
 This will:
