@@ -87,9 +87,10 @@ def generate_latex():
         kepler.sin_eccentric_anomaly_wrt_true_anomaly(),
         kepler.cos_eccentric_anomaly_wrt_true_anomaly(),
         kepler.eccentric_anomaly_wrt_true_anomaly(),
-        kepler.velocity_elliptical(),
+        kepler.radius_of_periapsis(),
+        kepler.radius_of_apoapsis()
     ]
-    circularAndEllipticalEquations = [equation_methods[0], equation_methods[1], equation_methods[4], equation_methods[2], equation_methods[6], equation_methods[3], equation_methods[7], equation_methods[8], equation_methods[9], equation_methods[10], equation_methods[7]]
+    circularAndEllipticalEquations = [equation_methods[0], equation_methods[1], equation_methods[4], equation_methods[2], equation_methods[6], equation_methods[3], equation_methods[7], equation_methods[8], equation_methods[9], equation_methods[10], equation_methods[7], equation_methods[11], equation_methods[12]]
     parabolicEquations = [equation_methods[5]]
     hyperbolicEquations = []
     latex_lines = [

@@ -78,8 +78,19 @@ class KeplerianEquations:
     def eccentric_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
         ecc_ano = sy.atan2(sy.sin(self.true_anomaly)*sy.sqrt(1-self.e**2), (self.e+sy.cos(self.true_anomaly)))
         ecc_ano_sy = sy.Symbol('E', real=True)
-        return EquationDefinition(sy.Eq(ecc_ano_sy, ecc_ano), "Eccentric Anomaly (E)", "The quadrant-checked eccentric anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
+        return EquationDefinition(sy.Eq(ecc_ano_sy, ecc_ano), "Eccentric Anomaly", "The quadrant-checked eccentric anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
 
+    def radius_of_periapsis(self)-> EquationDefinition:
+        e = self.e
+        a = self.a
+        rp = a * (1-e)
+        return EquationDefinition(sy.Eq(sy.Symbol('r_p', real=True, positive=True), rp), "Radius of Periapsis", "The minimum distance between the primary focus of the orbit and the satellite", vallado_4e("p. 2"), Length)
+
+    def radius_of_apoapsis(self)-> EquationDefinition:
+        e = self.e
+        a = self.a
+        ra = a * (1+e)
+        return EquationDefinition(sy.Eq(sy.Symbol('r_a', real=True, positive=True), ra), "Radius of Apoapsis", "The maximum distance between the primary focus of the orbit and the satellite", vallado_4e("p. 2"), Length)
 
     def evaluate_orbital_equations(self, equationDef: EquationDefinition, values_dict: dict)->float:
         """
