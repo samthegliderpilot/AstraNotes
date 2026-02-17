@@ -84,7 +84,7 @@ class OrbitalMechanicsWidget:
         self._add_field(
             name="e",
             description="e (eccentricity):",
-            default_value=0.001,
+            default_value=0.3,
             dimension=Dimensionless,   # ✅ now a normal dimension
         )
 
@@ -112,7 +112,7 @@ class OrbitalMechanicsWidget:
         self._add_field(
             name="true_anomaly",
             description="True Anomaly:",
-            default_value=0.0,
+            default_value=60.0,
             dimension=Angle,
         )
 
@@ -248,7 +248,10 @@ class OrbitalMechanicsWidget:
         for renderer in self.equation_renderers:
             native_val = self.orbital.evaluate_orbital_equations(renderer.equation, native_values)
             display_val = renderer.convert_native_to_display(native_val)
-            renderer.update_value(display_val)
+            try:
+                renderer.update_value(display_val)
+            except:
+                renderer.update_value(math.nan)
 
         # Update the diagram last, using the same native snapshot
         self.update_orbit_diagram(native_values)
@@ -331,154 +334,253 @@ class OrbitalMechanicsWidget:
 
         self.orbit_diagram_out.clear_output(wait=True)
         with self.orbit_diagram_out:
-            # Simple regime guard for the 2.0 diagram
-            if not (0 <= e < 1):
-                display(HTML("<div style='color:#666; font-style:italic;'>"
-                            "Orbit diagram (2.0) currently supports only elliptical orbits (0 ≤ e &lt; 1)."
-                            "</div>"))
-                return
-
             # orbit_diagram_svg is the drawsvg function we defined earlier
             dwg = orbit_diagram_svg(a=a, e=e, nu=nu)
             display(dwg)
 
 
-def orbit_diagram_svg(a, e, nu=None, *, nu_deg=None, size=520, margin=0.15,
-                      show_axes=True, show_labels=True):
+def orbit_diagram_svg(
+    a, e, nu=None, *,
+    size=520, margin=0.15,
+    show_axes=True, show_labels=True,
+    show_nu_arc=True,
+    nu_arc_mode="signed",        # "signed" or "minor"
+    pixel_padding=32,
+    stroke_width=2,
+    show_satellite=True,
+    satellite_size_px=10,
+    rmax_factor=10.0,            # for open orbits: plot out to rmax_factor * rp
+    N=600,
+    e_tol=1e-10,
+):
     """
-    Draw a simple orbital-geometry diagram as a vector SVG using drawsvg.
+    Conic-section orbit diagram (ellipse/parabola/hyperbola) in SVG via drawsvg.
 
-    Parameters
-    ----------
-    a : float
-        Semi-major axis (same units as you want for the geometry)
-    e : float
-        Eccentricity (0 <= e < 1 for ellipse)
-    nu : float, optional
-        True anomaly in radians (use either nu or nu_deg)
-    nu_deg : float, optional
-        True anomaly in degrees (use either nu or nu_deg)
-    size : int
-        Canvas size in pixels (square)
-    margin : float
-        Fractional margin around the apoapsis distance
-    show_axes : bool
-        Draw faint x/y axes
-    show_labels : bool
-        Add labels for focus, periapsis, apoapsis, and ν
+    Convention:
+      - Focus (central body) at (0,0)
+      - Periapsis on +x axis at (+rp, 0)
+      - True anomaly ν measured from +x toward +y (CCW, in standard math sense)
 
-    Returns
-    -------
-    drawsvg.Drawing
-        A drawing you can display in Jupyter by just returning it.
+    Inputs:
+      - For ellipse (e<1): 'a' is semi-major axis (a>0 recommended)
+      - For hyperbola (e>1): 'a' is |semi-major axis| (can be negative too; magnitude is used)
+      - For parabola (e==1): 'a' is interpreted as periapsis distance rp
+
+    Open-orbit plotting:
+      - Hyperbolic/parabolic orbits go to infinity, so we plot a finite branch out to r = rmax_factor*rp.
     """
-    try:
-        import drawsvg as draw
-    except ImportError as ex:
-        raise ImportError(
-            "drawsvg is not installed. Try: pip install drawsvg"
-        ) from ex
+    import math
+    import drawsvg as draw
 
-    if nu is None:
-        if nu_deg is None:
-            nu = 0.0
+    if e < 0:
+        raise ValueError("Eccentricity e must be >= 0.")
+    if a == 0:
+        raise ValueError("Parameter 'a' must be nonzero (for parabola, use a=rp > 0).")
+
+    # --- Classify conic & compute p ---
+    if abs(e - 1.0) <= e_tol:
+        conic = "parabola"
+        rp = float(a)
+        if rp <= 0:
+            raise ValueError("For parabolic case (e≈1), interpret a as periapsis distance rp; require a>0.")
+        p = 2.0 * rp
+    elif e < 1.0:
+        conic = "ellipse"
+        if a < 0:
+            # allow but unusual; geometry still works using |a|
+            a_use = abs(a)
         else:
-            nu = math.radians(nu_deg)
+            a_use = float(a)
+        p = a_use * (1.0 - e * e)
+        rp = p / (1.0 + e)
+    else:
+        conic = "hyperbola"
+        a_use = abs(a)
+        p = a_use * (e * e - 1.0)
+        rp = p / (1.0 + e)
 
-    if not (0 <= e < 1):
-        raise ValueError("This simple diagram function currently supports only elliptical orbits (0 <= e < 1).")
+    # Utility: r(nu) for this conic
+    def r_of(nu_val):
+        denom = 1.0 + e * math.cos(nu_val)
+        if denom <= 0:
+            return float("inf")
+        return p / denom
 
-    # Basic ellipse geometry
-    b = a * math.sqrt(1 - e*e)
-    c = a * e  # focus distance from center
+    # Validate current nu is on the physical branch
+    denom_now = 1.0 + e * math.cos(nu)
+    if denom_now <= 0:
+        raise ValueError(
+            "True anomaly v is outside the valid branch for this open orbit "
+            "(1 + e cos(v) <= 0). Choose v closer to periapsis."
+        )
 
-    # We'll place the *right* focus at the origin (0,0). Then the ellipse center is at (-c, 0).
-    # Parametric ellipse with that shift:
-    #   x(t) = a cos t - c
-    #   y(t) = b sin t
-    # This makes periapsis at +x.
-    rp = a * (1 - e)
-    ra = a * (1 + e)
+    # Current position
+    r_now = p / denom_now
+    xnu = r_now * math.cos(nu)
+    ynu = r_now * math.sin(nu)
 
-    # True anomaly position (focus-origin polar form)
-    r = a * (1 - e*e) / (1 + e * math.cos(nu))
-    xnu = r * math.cos(nu)
-    ynu = r * math.sin(nu)
+    # --- Choose plotting anomaly range ---
+    if conic == "ellipse":
+        nu_min, nu_max = 0.0, 2.0 * math.pi
+    else:
+        # We plot until r reaches rmax = rmax_factor * rp
+        rmax = max(rmax_factor * rp, 1.5 * rp)
 
-    # Scaling to pixels
-    R = ra * (1 + margin)
-    scale = (size * 0.45) / R  # 0.45 leaves some breathing room
+        # Solve for nu where r = rmax:
+        # r = p/(1+e cos nu) => 1+e cos nu = p/r => cos nu = (p/r - 1)/e
+        if conic == "parabola":
+            # e == 1
+            cos_lim = (p / rmax) - 1.0
+        else:
+            cos_lim = (p / rmax - 1.0) / e
+
+        # clamp due to numeric edge cases
+        cos_lim = max(-1.0, min(1.0, cos_lim))
+        nu_plot_lim = math.acos(cos_lim)
+
+        # Also respect the asymptote limit (where denom=0) for hyperbola, and pi for parabola
+        if conic == "hyperbola":
+            nu_inf = math.acos(-1.0 / e)  # denom -> 0 at this |nu|
+            nu_plot_lim = min(nu_plot_lim, nu_inf - 1e-4)
+        else:
+            # parabola tends to infinity at nu = pi
+            nu_plot_lim = min(nu_plot_lim, math.pi - 1e-4)
+
+        nu_min, nu_max = -nu_plot_lim, +nu_plot_lim
+
+    # Sample points in polar form around the focus
+    pts_xy = []
+    for i in range(N + 1):
+        t = nu_min + (nu_max - nu_min) * i / N
+        denom = 1.0 + e * math.cos(t)
+        if denom <= 0:
+            continue
+        r = p / denom
+        x = r * math.cos(t)
+        y = r * math.sin(t)
+        pts_xy.append((x, y))
+
+    if len(pts_xy) < 5:
+        raise ValueError("Could not generate enough points to draw the orbit (range too small or invalid).")
+
+    # --- Scaling to pixels based on plotted extents ---
+    xs = [x for x, _ in pts_xy] + [0.0, xnu]
+    ys = [y for _, y in pts_xy] + [0.0, ynu]
+    max_extent = max(max(abs(x) for x in xs), max(abs(y) for y in ys))
+    R = max_extent * (1.0 + margin)
+
+    half = size / 2
+    usable_half = max(half - pixel_padding, 10)
+    scale = usable_half / R
 
     def tosvg(x, y):
-        # SVG y-axis goes down; invert so +y is up in our diagram.
-        return (x * scale, -y * scale)
+        return (x * scale, -y * scale)  # invert y so +y is up
 
-    dwg = draw.Drawing(size, size, origin='center')  # origin at canvas center (still SVG-y-down)
+    dwg = draw.Drawing(size, size, origin='center')
 
-    # Optional axes
+    # --- Optional axes ---
     if show_axes:
         ax_len = R * scale
         dwg.append(draw.Line(-ax_len, 0, ax_len, 0, stroke='rgba(0,0,0,0.15)', stroke_width=1))
         dwg.append(draw.Line(0, -ax_len, 0, ax_len, stroke='rgba(0,0,0,0.15)', stroke_width=1))
 
-    # Draw ellipse (as a polyline for full control)
-    pts = []
-    N = 400
-    for i in range(N + 1):
-        t = 2 * math.pi * i / N
-        x = a * math.cos(t) - c
-        y = b * math.sin(t)
-        pts.append(tosvg(x, y))
+    # --- Draw orbit path ---
+    path = draw.Path(stroke='black', stroke_width=stroke_width, fill='none')
+    X0, Y0 = tosvg(*pts_xy[0])
+    path.M(X0, Y0)
+    for (x, y) in pts_xy[1:]:
+        X, Y = tosvg(x, y)
+        path.L(X, Y)
+    dwg.append(path)
 
-    # Build path from points
-    p = draw.Path(stroke='black', stroke_width=2, fill='none')
-    x0, y0 = pts[0]
-    p.M(x0, y0)
-    for (x, y) in pts[1:]:
-        p.L(x, y)
-    dwg.append(p)
-
-    # Focus (central body) at origin
+    # --- Focus (central body) ---
     fx, fy = tosvg(0, 0)
     dwg.append(draw.Circle(fx, fy, 6, fill='black'))
 
-    # Periapsis and apoapsis points
+    # --- Periapsis point ---
     px, py = tosvg(rp, 0)
-    ax, ay = tosvg(-ra, 0)
-
     dwg.append(draw.Circle(px, py, 4, fill='black'))
-    dwg.append(draw.Circle(ax, ay, 4, fill='black'))
 
-    # Radius vector to current true anomaly
+    # --- Apoapsis point (ellipse only) ---
+    if conic == "ellipse":
+        ra = p / (1.0 - e)  # = a(1+e)
+        ax, ay = tosvg(-ra, 0)
+        dwg.append(draw.Circle(ax, ay, 4, fill='black'))
+
+    # --- Radius vector to current ν ---
     x1, y1 = tosvg(xnu, ynu)
-    dwg.append(draw.Line(fx, fy, x1, y1, stroke='black', stroke_width=2))
+    dwg.append(draw.Line(fx, fy, x1, y1, stroke='black', stroke_width=stroke_width))
 
-    # A small arc to show ν (from +x axis to the radius vector)
-    arc_r = max(0.18 * a, 0.2 * rp)  # in "physics units"
-    arx0, ary0 = tosvg(arc_r, 0)
-    arx1, ary1 = tosvg(arc_r * math.cos(nu), arc_r * math.sin(nu))
+    # --- Satellite marker (star) ---
+    if show_satellite:
+        def star_points(cx, cy, r_outer, r_inner, n=5, rotation=-math.pi/2):
+            pts = []
+            for k in range(2 * n):
+                ang = rotation + k * math.pi / n
+                rr = r_outer if (k % 2 == 0) else r_inner
+                pts.append((cx + rr * math.cos(ang), cy + rr * math.sin(ang)))
+            return pts
 
-    # SVG arc flags: large_arc, sweep
-    # In our coordinates, increasing nu should sweep CCW (upwards), but SVG y is inverted; we already inverted y,
-    # so the geometry behaves like standard math.
-    large_arc = 1 if (nu % (2*math.pi)) > math.pi else 0
-    sweep = 1  # CCW in our inverted-y coordinate system tends to map correctly with sweep=1 here
+        pts = star_points(x1, y1, satellite_size_px, satellite_size_px * 0.45)
+        star = draw.Path(stroke='black', stroke_width=1.2, fill='white')
+        sx0, sy0 = pts[0]
+        star.M(sx0, sy0)
+        for (xx, yy) in pts[1:]:
+            star.L(xx, yy)
+        star.Z()
+        dwg.append(star)
 
-    arc = draw.Path(stroke='black', stroke_width=2, fill='none')
-    arc.M(arx0, ary0)
-    # Use circular arc: rx=ry=arc_r*scale
-    arc.A(arc_r * scale, arc_r * scale, 0, large_arc, sweep, arx1, ary1)
-    dwg.append(arc)
+    # --- ν arc (with correct direction) ---
+    if show_nu_arc:
+        nu_norm = nu % (2 * math.pi)
 
+        if nu_arc_mode == "minor":
+            nu_draw = nu_norm if nu_norm <= math.pi else (2 * math.pi - nu_norm)
+            # With y inverted, SVG sweep is opposite of math CCW:
+            sweep = 0 if nu_norm <= math.pi else 1
+        elif nu_arc_mode == "signed":
+            nu_draw = nu_norm
+            sweep = 0  # <-- correct after y inversion
+        else:
+            raise ValueError('nu_arc_mode must be "signed" or "minor".')
+
+        if nu_draw > 1e-6:
+            arc_r = max(0.25 * rp, 0.10 * (rp + 1e-12))
+
+            arx0, ary0 = tosvg(arc_r, 0)
+            arx1, ary1 = tosvg(arc_r * math.cos(nu_draw), arc_r * math.sin(nu_draw))
+
+            large_arc = 1 if nu_draw > math.pi else 0
+
+            arc = draw.Path(stroke='black', stroke_width=stroke_width, fill='none')
+            arc.M(arx0, ary0)
+            arc.A(arc_r * scale, arc_r * scale, 0, large_arc, sweep, arx1, ary1)
+            dwg.append(arc)
+
+            if show_labels:
+                mid = nu_draw / 2
+                lx, ly = tosvg(arc_r * math.cos(mid), arc_r * math.sin(mid))
+                dwg.append(draw.Text('ν', 16, lx, ly, text_anchor='middle', dominant_baseline='middle'))
+
+    # --- Labels ---
     if show_labels:
-        # Simple labels (kept minimal)
-        dwg.append(draw.Text('Focus', 12, fx + 8, fy - 8))
-        dwg.append(draw.Text('Periapsis', 12, px + 6, py - 6))
-        dwg.append(draw.Text('Apoapsis', 12, ax - 60, ay - 6))
+        # Offsets in physics units so text moves sensibly with scaling
+        label_off = 0.08 * max(rp, 1e-12)
 
-        # ν label near the arc midpoint
-        mid = nu / 2
-        lx, ly = tosvg(arc_r * math.cos(mid), arc_r * math.sin(mid))
-        dwg.append(draw.Text('ν', 16, lx + 4, ly - 4))
+        Lx, Ly = tosvg(0 + label_off, 0 + label_off)
+        dwg.append(draw.Text('Focus', 12, Lx, Ly, text_anchor='start'))
+
+        Lx, Ly = tosvg(rp + label_off, 0 + label_off)
+        dwg.append(draw.Text('Periapsis', 12, Lx, Ly, text_anchor='start'))
+
+        if conic == "ellipse":
+            ra = p / (1.0 - e)
+            Lx, Ly = tosvg(-ra - label_off, 0 + label_off)
+            dwg.append(draw.Text('Apoapsis', 12, Lx, Ly, text_anchor='end'))
+        else:
+            # Optional: label the orbit type for open conics
+            # Place near top-left of the drawing box
+            tx, ty = tosvg(-0.9 * max_extent, 0.9 * max_extent)
+            dwg.append(draw.Text(conic.capitalize(), 12, tx, ty, text_anchor='start'))
 
     return dwg

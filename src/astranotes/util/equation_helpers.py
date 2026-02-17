@@ -3,6 +3,7 @@ import ipywidgets as widgets
 import sympy as sy
 from IPython.display import display, Math
 import math
+from numbers import Real
 from astranotes.util.units import Dimension, Unit
 from astranotes.util.source_ref import SourceRef
 
@@ -22,7 +23,7 @@ def _format_number(value: float, sigfigs: int = 6) -> str:
         exp = int(math.floor(math.log10(abs_v)))
         mant = value / (10 ** exp)
         mant_str = f"{mant:.{sigfigs-1}g}"
-        return f"{mant_str} × 10<sup>{exp}</sup>"
+        return f"{mant_str} x 10<sup>{exp}</sup>"
 
     # Otherwise: significant digits without excessive noise
     return f"{value:.{sigfigs}g}"
@@ -84,25 +85,46 @@ class EquationDefinitionHtmlRender:
             raise RuntimeError("EquationDefinitionHtmlRender.current_unit is not set.")
         return self.current_unit.from_native(native_value)
 
-    def update_value(self, display_value: float) -> None:
+
+    def update_value(self, display_value) -> None:
         """
         Update the displayed numeric value using the cached unit.
+        Handles undefined, non-real, or invalid values gracefully.
         """
         if self.current_unit is None:
             raise RuntimeError("EquationDefinitionHtmlRender.current_unit is not set.")
 
-        number_html = _format_number(display_value, sigfigs=6)
-        unit_html = self.current_unit.pretty_abbreviation() if hasattr(self.current_unit, "pretty_abbreviation") else self.current_unit.abbreviation
+        # ---- Validate numeric value ----
+        is_valid_real = (
+            isinstance(display_value, Real)
+            and not isinstance(display_value, bool)   # guard against True/False
+            and math.isfinite(display_value)
+        )
 
-        # Make it bigger and slightly separated
+        if not is_valid_real:
+            message_html = (
+                "<div style='font-size: 1.05em; padding-top: 2px; color: #a33;'>"
+                "Element not evaluated for this orbit type"
+                "</div>"
+            )
+            self.result.value = message_html
+            return
+
+        # ---- Normal numeric display ----
+        number_html = _format_number(display_value, sigfigs=6)
+
+        unit_html = (
+            self.current_unit.pretty_abbreviation()
+            if hasattr(self.current_unit, "pretty_abbreviation")
+            else self.current_unit.abbreviation
+        )
+
         self.result.value = (
             f"<div style='font-size: 1.1em; padding-top: 2px;'>"
             f"<span>{number_html}</span>"
             f"<span style='padding-left: 6px; color: #444;'>{unit_html}</span>"
             f"</div>"
         )
-
-
 
     def render(self) -> widgets.Widget:
         tooltip_text = f"{self.equation.explanation} — Source: {self.equation.source}"
