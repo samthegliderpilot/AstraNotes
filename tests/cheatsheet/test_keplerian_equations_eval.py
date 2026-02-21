@@ -46,7 +46,7 @@ def test_all_core_equations_evaluate_to_finite():
         orb.circular_velocity(),
         orb.escape_velocity(),
         orb.semi_latus_rectum(),
-        orb.velocity_elliptical(),
+        orb.velocity_magnitude(),
         orb.sin_eccentric_anomaly_wrt_true_anomaly(),
         orb.cos_eccentric_anomaly_wrt_true_anomaly(),
         orb.eccentric_anomaly_wrt_true_anomaly(),

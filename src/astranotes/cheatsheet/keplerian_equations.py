@@ -1,6 +1,6 @@
 import sympy as sy
 from astranotes.util.units import Length, Time, Angle, Mass, Dimension, Dimensionless
-from astranotes.util.equation_helpers import EquationDefinition
+from astranotes.util.equation_helpers import EquationDefinition, EquationForm
 from astranotes.util.source_ref import SourceRef
 from astranotes.cheatsheet.common_sources import vallado_4e, bates_mueller_white
 
@@ -16,6 +16,9 @@ class KeplerianEquations:
         self.mu = sy.Symbol('\mu', real=True, positive=True)             # gravitational parameter
         self.r = sy.Symbol('r', real=True, positive=True)              # radial distance
         self.p = sy.Symbol('p', real=True, positive=True)              # semi-latus rectum (computed from a, e)
+        self.flight_path_angle = sy.Symbol(r'\gamma', real=True) # flight path angle
+        self.eccentric_anomaly = sy.Symbol('E', real=True) # eccentric anomaly
+        self.velocity = sy.Symbol('v', real=True, positive=True)
 
     def vis_viva(self) -> EquationDefinition:
         """Returns symbolic form of vis-viva equation"""
@@ -60,7 +63,7 @@ class KeplerianEquations:
         eq = sy.Eq(sy.Symbol('p'), p)
         return EquationDefinition(eq, "Semi-Latus Rectum", "The radius of the orbit at a true anomaly of 90 and 270 degrees.", bates_mueller_white('p. 24: Eq 1.5-6'), Length)
 
-    def velocity_elliptical(self)->EquationDefinition:
+    def velocity_magnitude(self)->EquationDefinition:
         vel = sy.sqrt(self.mu*2/self.r - self.mu/self.a)
         eq = sy.Eq(sy.Symbol('v', real=True, positive=True), vel)
         return EquationDefinition(eq, "Velocity (elliptical)", "The speed of a satellite in an elliptical orbit.", vallado_4e('p. 2'), Length/Time)
@@ -92,6 +95,32 @@ class KeplerianEquations:
         ra = a * (1+e)
         return EquationDefinition(sy.Eq(sy.Symbol('r_a', real=True, positive=True), ra), "Radius of Apoapsis", "The maximum distance between the primary focus of the orbit and the satellite", vallado_4e("p. 2"), Length)
 
+
+    def sin_flight_path_angle_wrt_eccentric_anomaly(self) -> EquationDefinition:
+        e = self.e
+        sin_fpa = e*sy.sin(self.eccentric_anomaly)/(1-(e**2)*sy.cos(self.true_anomaly)**2)
+        sin_fpa_sy = sy.Symbol(r'sin(\gamma)', real=True)
+        return EquationDefinition(sy.Eq(sin_fpa_sy, sin_fpa), "Sin of Flight Path Angle", "The sin of the flight path angle", vallado_4e('p. 2'), Dimensionless)
+
+    def cos_flight_path_angle_wrt_eccentric_anomaly(self) -> EquationDefinition:
+        e = self.e
+        cos_fpa = (1-e**2)/(1-(e**2)*sy.cos(self.true_anomaly)**2)
+        cos_fla_sy = sy.Symbol(r'cos(\gamma)', real=True)
+        return EquationDefinition(sy.Eq(cos_fla_sy, cos_fpa), "Cos of Flight Path Angle", "The cos of the flight path angle", vallado_4e("p. 2"), Dimensionless)
+
+    def flight_path_angle_wrt_eccentric_anomaly(self) -> EquationDefinition:
+        e = self.e
+        flight_path_angle = sy.atan2(e*sy.sin(self.eccentric_anomaly), (1-e**2))
+        fpaSy = self.flight_path_angle
+        return EquationDefinition(sy.Eq(fpaSy, flight_path_angle), "Flight Path Angle", "The quadrant-checked flight path angle with respect to the the eccentric anomaly", vallado_4e("Simplified from other expressions"), Angle)
+
+
+    def angular_momentum(self)-> EquationDefinition:
+        expr = sy.sqrt(self.mu* self.p)
+        form1 = self.r*self.velocity*sy.cos(self.flight_path_angle)
+        equ_def = EquationDefinition(sy.Eq(sy.Symbol('h', real=True, positive=True), expr), "Specific Angular Momentum", "The magnitude of the angular momentum vecor", vallado_4e("p. 2"), Length*Length/Time, (EquationForm(form1),))
+        return equ_def
+
     def evaluate_orbital_equations(self, equationDef: EquationDefinition, values_dict: dict)->float:
         """
         Evaluates symbolic equation numerically, using the values_dict
@@ -102,6 +131,9 @@ class KeplerianEquations:
         values_dict[self.p] = self.semi_latus_rectum().expr.rhs.subs(values_dict).evalf()
         if self.r not in values_dict:
             values_dict[self.r] = self.orbital_radius().expr.rhs.subs(values_dict).evalf()
+        values_dict[self.eccentric_anomaly] = self.eccentric_anomaly_wrt_true_anomaly().expr.rhs.subs(values_dict).evalf()
+        values_dict[self.velocity] = self.velocity_magnitude().expr.rhs.subs(values_dict).evalf()
+        values_dict[self.flight_path_angle] = self.flight_path_angle_wrt_eccentric_anomaly().expr.rhs.subs(values_dict).evalf()
 
         result = equationDef.evaluate_expr(values_dict)
         return result

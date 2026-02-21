@@ -1,4 +1,5 @@
-from typing import List, Optional, Dict
+from dataclasses import dataclass
+from typing import List, Optional, Dict, Sequence
 import ipywidgets as widgets
 import sympy as sy
 from IPython.display import display, Math
@@ -28,13 +29,20 @@ def _format_number(value: float, sigfigs: int = 6) -> str:
     # Otherwise: significant digits without excessive noise
     return f"{value:.{sigfigs}g}"
 
+@dataclass(frozen=True)
+class EquationForm:
+    expr: sy.Expr
+
 class EquationDefinition:
-    def __init__(self, expr: sy.Eq, name: str, explanation: str, source: SourceRef, dimension: Dimension):
+    def __init__(self, expr: sy.Eq, name: str, explanation: str, source: SourceRef, dimension: Dimension, forms : Sequence[EquationForm] = None):
         self.expr = expr
         self.name = name
         self.explanation = explanation
         self.source = source
         self.dimension = dimension
+        if forms == None:
+            forms = ()
+        self.forms = forms
 
     def source_text(self, full: bool = False) -> str:
         return self.source.full() if full else self.source.compact()
@@ -66,7 +74,18 @@ class EquationDefinitionHtmlRender:
         self._render_equation_math()
 
     def _render_equation_math(self):
-        latex_str = sy.latex(self.equation.expr)
+        # Base equation: Eq(lhs, rhs)
+        lhs = self.equation.expr.lhs
+        rhs = self.equation.expr.rhs
+
+        parts = [sy.latex(lhs), sy.latex(rhs)]
+
+        # Additional forms: just RHS expressions
+        for f in self.equation.forms:
+            parts.append(sy.latex(f.expr))
+
+        latex_str = " = ".join(parts)
+
         self.eq_out.clear_output(wait=True)
         with self.eq_out:
             display(Math(latex_str))

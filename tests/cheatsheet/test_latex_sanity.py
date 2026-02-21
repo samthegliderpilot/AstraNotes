@@ -13,7 +13,7 @@ def _make_equation_groups():
             orb.mean_motion(),
             orb.orbital_period(),
             orb.semi_latus_rectum(),
-            orb.velocity_elliptical(),
+            orb.velocity_magnitude(),
         ]),
         EquationGroup("Elliptical Orbit Equations", [
             orb.orbital_radius(),

@@ -27,14 +27,27 @@ def generate_column_equation_table(equations):
     lines.append(r"\setlength{\parskip}{0pt}")
     lines.append(r"\setlength{\parindent}{0pt}")
 
-    for eqCb in equations:
-        eqFull = eqCb
+    for eqFull in equations:
         eq = eqFull.expr
         name = eqFull.name
-        eq_latex = sy.latex(eq)
+
+        # Canonical lhs = rhs
+        lhs = eq.lhs
+        rhs = eq.rhs
+
+        parts = [sy.latex(lhs), sy.latex(rhs)]
+
+        # Append additional RHS-only forms
+        for form in getattr(eqFull, "forms", ()):
+            parts.append(sy.latex(form.expr))
+
+        # Join into chained equality
+        eq_latex = r" = ".join(parts)
+
         lines.append(r"\noindent{\footnotesize\textbf{" + name + r"}}")
         lines.append(r"\vspace{-0.4em}")
         lines.append(r"\[\small " + eq_latex + r"\]")
+
     return "\n".join(lines)
 
 def build_full_equation_table(circularAndElliptical, parabolic, hyperbolic):
@@ -83,14 +96,16 @@ def generate_latex():
         kepler.circular_velocity(),
         kepler.escape_velocity(),
         kepler.semi_latus_rectum(),
-        kepler.velocity_elliptical(),
+        kepler.velocity_magnitude(),
         kepler.sin_eccentric_anomaly_wrt_true_anomaly(),
         kepler.cos_eccentric_anomaly_wrt_true_anomaly(),
         kepler.eccentric_anomaly_wrt_true_anomaly(),
         kepler.radius_of_periapsis(),
-        kepler.radius_of_apoapsis()
+        kepler.radius_of_apoapsis(),
+        kepler.flight_path_angle_wrt_eccentric_anomaly(),
+        kepler.angular_momentum()
     ]
-    circularAndEllipticalEquations = [equation_methods[0], equation_methods[1], equation_methods[4], equation_methods[2], equation_methods[6], equation_methods[3], equation_methods[7], equation_methods[8], equation_methods[9], equation_methods[10], equation_methods[7], equation_methods[11], equation_methods[12]]
+    circularAndEllipticalEquations = [equation_methods[0], equation_methods[1], equation_methods[4], equation_methods[2], equation_methods[6], equation_methods[3], equation_methods[7], equation_methods[8], equation_methods[9], equation_methods[10], equation_methods[7], equation_methods[11], equation_methods[12], equation_methods[13], equation_methods[14]]
     parabolicEquations = [equation_methods[5]]
     hyperbolicEquations = []
     latex_lines = [
