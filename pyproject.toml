@@ -28,6 +28,7 @@ notebook = [
 
 # Dev / test / repo hygiene tooling
 dev = [
+  "pydev",
   "pytest",
   "pytest-cov",
   "nbstripout",

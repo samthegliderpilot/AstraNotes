@@ -12,8 +12,8 @@ class KeplerianEquations:
         self.i = sy.Symbol('i', real=True)              # inclination
         self.raan = sy.Symbol('raan', real=True)        # right ascension of ascending node
         self.arg_pe = sy.Symbol('arg_pe', real=True)    # argument of periapsis
-        self.true_anomaly = sy.Symbol('\nu', real=True)   # true anomaly (often ν)
-        self.mu = sy.Symbol('\mu', real=True, positive=True)             # gravitational parameter
+        self.true_anomaly = sy.Symbol(r'\nu', real=True)   # true anomaly (often ν)
+        self.mu = sy.Symbol(r'\mu', real=True, positive=True)             # gravitational parameter
         self.r = sy.Symbol('r', real=True, positive=True)              # radial distance
         self.p = sy.Symbol('p', real=True, positive=True)              # semi-latus rectum (computed from a, e)
         self.flight_path_angle = sy.Symbol(r'\gamma', real=True) # flight path angle
