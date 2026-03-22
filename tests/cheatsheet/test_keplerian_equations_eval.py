@@ -39,17 +39,17 @@ def test_all_core_equations_evaluate_to_finite():
     )
 
     eq_defs = [
-        orb.vis_viva(),
-        orb.mean_motion(),
-        orb.orbital_period(),
-        orb.orbital_radius(),
-        orb.circular_velocity(),
-        orb.escape_velocity(),
-        orb.semi_latus_rectum(),
-        orb.velocity_magnitude(),
-        orb.sin_eccentric_anomaly_wrt_true_anomaly(),
-        orb.cos_eccentric_anomaly_wrt_true_anomaly(),
-        orb.eccentric_anomaly_wrt_true_anomaly(),
+        orb.vis_viva,
+        orb.mean_motion,
+        orb.orbital_period,
+        orb.orbital_radius,
+        orb.circular_velocity,
+        orb.escape_velocity,
+        orb.semi_latus_rectum,
+        orb.velocity_magnitude,
+        orb.sin_eccentric_anomaly_wrt_true_anomaly,
+        orb.cos_eccentric_anomaly_wrt_true_anomaly,
+        orb.eccentric_anomaly_wrt_true_anomaly,
     ]
 
     for eqd in eq_defs:
@@ -101,8 +101,8 @@ def test_sin_cos_of_eccentric_anomaly_identity():
     This will catch substitution/plumbing mistakes.
     """
     orb = KeplerianEquations()
-    eq_sin = orb.sin_eccentric_anomaly_wrt_true_anomaly()
-    eq_cos = orb.cos_eccentric_anomaly_wrt_true_anomaly()
+    eq_sin = orb.sin_eccentric_anomaly_wrt_true_anomaly
+    eq_cos = orb.cos_eccentric_anomaly_wrt_true_anomaly
 
     vals = _native_inputs(
         orb,

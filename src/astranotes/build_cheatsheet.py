@@ -89,21 +89,21 @@ def generate_latex():
     footer_text = f"AstraNotes v{version} — Generated {generated_utc}"
 
     equation_methods = [
-        kepler.vis_viva(),
-        kepler.mean_motion(),
-        kepler.orbital_period(),
-        kepler.orbital_radius(),
-        kepler.circular_velocity(),
-        kepler.escape_velocity(),
-        kepler.semi_latus_rectum(),
-        kepler.velocity_magnitude(),
-        kepler.sin_eccentric_anomaly_wrt_true_anomaly(),
-        kepler.cos_eccentric_anomaly_wrt_true_anomaly(),
-        kepler.eccentric_anomaly_wrt_true_anomaly(),
-        kepler.radius_of_periapsis(),
-        kepler.radius_of_apoapsis(),
-        kepler.flight_path_angle_wrt_eccentric_anomaly(),
-        kepler.angular_momentum()
+        kepler.vis_viva,
+        kepler.mean_motion,
+        kepler.orbital_period,
+        kepler.orbital_radius,
+        kepler.circular_velocity,
+        kepler.escape_velocity,
+        kepler.semi_latus_rectum,
+        kepler.velocity_magnitude,
+        kepler.sin_eccentric_anomaly_wrt_true_anomaly,
+        kepler.cos_eccentric_anomaly_wrt_true_anomaly,
+        kepler.eccentric_anomaly_wrt_true_anomaly,
+        kepler.radius_of_periapsis,
+        kepler.radius_of_apoapsis,
+        kepler.flight_path_angle_wrt_eccentric_anomaly,
+        kepler.angular_momentum
     ]
     circularAndEllipticalEquations = [equation_methods[0], equation_methods[1], equation_methods[4], equation_methods[2], equation_methods[6], equation_methods[3], equation_methods[7], equation_methods[8], equation_methods[9], equation_methods[10], equation_methods[7], equation_methods[11], equation_methods[12], equation_methods[13], equation_methods[14]]
     parabolicEquations = [equation_methods[5]]

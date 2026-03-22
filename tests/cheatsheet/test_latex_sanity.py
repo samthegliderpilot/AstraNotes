@@ -9,23 +9,23 @@ def _make_equation_groups():
     orb = KeplerianEquations()
     equation_groups = [
         EquationGroup("General Orbital Equations", [
-            orb.vis_viva(),
-            orb.mean_motion(),
-            orb.orbital_period(),
-            orb.semi_latus_rectum(),
-            orb.velocity_magnitude(),
+            orb.vis_viva,
+            orb.mean_motion,
+            orb.orbital_period,
+            orb.semi_latus_rectum,
+            orb.velocity_magnitude,
         ]),
         EquationGroup("Elliptical Orbit Equations", [
-            orb.orbital_radius(),
-            orb.sin_eccentric_anomaly_wrt_true_anomaly(),
-            orb.cos_eccentric_anomaly_wrt_true_anomaly(),
-            orb.eccentric_anomaly_wrt_true_anomaly(),
+            orb.orbital_radius,
+            orb.sin_eccentric_anomaly_wrt_true_anomaly,
+            orb.cos_eccentric_anomaly_wrt_true_anomaly,
+            orb.eccentric_anomaly_wrt_true_anomaly,
         ]),
         EquationGroup("Circular Orbit Equations", [
-            orb.circular_velocity(),
+            orb.circular_velocity,
         ]),
         EquationGroup("Parabolic Equations", [
-            orb.escape_velocity(),
+            orb.escape_velocity,
         ]),
     ]
     return equation_groups
