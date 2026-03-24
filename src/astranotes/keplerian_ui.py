@@ -245,15 +245,18 @@ class OrbitalMechanicsWidget:
     def evaluate_and_display(self) -> None:
         native_values = self.get_values_dict()
 
+        # Evaluate everything once
+        evaluated = self.orbital.evaluate_my_equations(native_values)
+
         for renderer in self.equation_renderers:
-            native_val = self.orbital.evaluate_orbital_equations(renderer.equation, native_values)
-            display_val = renderer.convert_native_to_display(native_val)
             try:
+                native_val = evaluated.get(renderer.equation, math.nan)
+                display_val = renderer.convert_native_to_display(native_val)
                 renderer.update_value(display_val)
-            except:
+            except Exception:
                 renderer.update_value(math.nan)
 
-        # Update the diagram last, using the same native snapshot
+        # Update diagram last
         self.update_orbit_diagram(native_values)
 
 
