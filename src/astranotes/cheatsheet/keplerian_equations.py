@@ -26,6 +26,12 @@ class KeplerianEquations:
         self.vis_viva_sy = sy.Symbol('v', real=True, positive=True)
         self.mean_motion_sy = sy.Symbol('n', real=True, positive=True)
         self.orbital_period_sy = sy.Symbol('T', real=True, positive=True)
+        self.velocity_circular_sy = sy.Symbol('v_c', real=True, positive=True)
+        self.velocity_escape_sy = sy.Symbol('v_{esc}', real=True, positive=True)
+        self.radius_of_periapsis_sy = sy.Symbol('r_p', real=True, positive=True)
+        self.ecc_ano_sy = sy.Symbol('E', real=True)
+        self.para_ano_sy = sy.Symbol('B', real=True)
+        self.hyp_ano_sy = sy.Symbol('H', real=True)
 
 
     @cached_property
@@ -61,14 +67,14 @@ class KeplerianEquations:
     def circular_velocity(self)->EquationDefinition:
         """Returns symbolic form of circular orbit velocity"""
         v_c = sy.sqrt(self.mu / self.r_sy)
-        eq = sy.Eq(sy.Symbol('v_c'), v_c)
+        eq = sy.Eq(self.velocity_circular_sy, v_c)
         return EquationDefinition(eq, "Velocity (circular)", "The speed of a satellite in a circular orbit", bates_mueller_white('p. 34: Eq 1.8-2'), Length/Time)
 
     @cached_property
     def escape_velocity(self)->EquationDefinition:
         """Returns symbolic form of escape velocity"""
         v_e = sy.sqrt(2 * self.mu / self.r_sy)
-        eq = sy.Eq(sy.Symbol('v_{esc}', real=True, positive=True), v_e)
+        eq = sy.Eq(self.velocity_escape_sy, v_e)
         return EquationDefinition(eq, "Escape Velocity", "The speed a satellite needs to have to escape the central body it is arround. Assumes a parabolic orbit.", bates_mueller_white('p. 35: Eq 1.9-2'), Length/Time)
 
     @cached_property
@@ -81,7 +87,7 @@ class KeplerianEquations:
     @cached_property
     def velocity_magnitude(self)->EquationDefinition:
         vel = sy.sqrt(self.mu*2/self.r_sy - self.mu/self.a)
-        eq = sy.Eq(sy.Symbol('v', real=True, positive=True), vel)
+        eq = sy.Eq(self.velocity_sy, vel)
         return EquationDefinition(eq, "Velocity (elliptical)", "The speed of a satellite in an elliptical orbit.", vallado_4e('p. 2'), Length/Time)
 
     @cached_property
@@ -99,15 +105,37 @@ class KeplerianEquations:
     @cached_property
     def eccentric_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
         ecc_ano = sy.atan2(sy.sin(self.true_anomaly)*sy.sqrt(1-self.e**2), (self.e+sy.cos(self.true_anomaly)))
-        ecc_ano_sy = sy.Symbol('E', real=True)
-        return EquationDefinition(sy.Eq(ecc_ano_sy, ecc_ano), "Eccentric Anomaly", "The quadrant-checked eccentric anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
+        return EquationDefinition(sy.Eq(self.ecc_ano_sy, ecc_ano), "Eccentric Anomaly", "The quadrant-checked eccentric anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
+
+    @cached_property
+    def parabolic_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
+        par_ano = sy.atan(sy.sin(self.true_anomaly/2))
+        return EquationDefinition(sy.Eq(self.para_ano_sy, par_ano), "Parabolic Anomaly", "The parabolic anomaly with respect to true anomaly", vallado_4e("p. 2"), Angle)
+
+    @cached_property
+    def sin_hyperbolic_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
+        sin_e = sy.sinh(self.true_anomaly)*sy.sqrt(self.e**2-1)/(1+self.e*sy.cosh(self.true_anomaly))
+        sin_e_sy = sy.Symbol('sinh(H)', real=True)
+        return EquationDefinition(sy.Eq(sin_e_sy, sin_e), "Sin of Hyperbolic Anomaly", "The sin of the hyperbolic anomaly", vallado_4e('p. 2'), Dimensionless)
+
+    @cached_property
+    def cos_hyperbolic_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
+        cos_e = (self.e+sy.cosh(self.true_anomaly))/(1+self.e*sy.cosh(self.true_anomaly))
+        cos_e_sy = sy.Symbol('cosh(H)', real=True)
+        return EquationDefinition(sy.Eq(cos_e_sy, cos_e), "Cos of Hyperbolic Anomaly", "The cos of the hyperbolic anomaly", vallado_4e("p. 2"), Dimensionless)
+
+    @cached_property
+    def hyperbolic_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
+        ecc_ano = sy.atan2(sy.sinh(self.true_anomaly)*sy.sqrt(self.e**2-1), (self.e+sy.cosh(self.true_anomaly)))
+        return EquationDefinition(sy.Eq(self.hyp_ano_sy, ecc_ano), "Hyperbolic Anomaly", "The hyperbolic anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
+
 
     @cached_property
     def radius_of_periapsis(self)-> EquationDefinition:
         e = self.e
         a = self.a
         rp = a * (1-e)
-        return EquationDefinition(sy.Eq(sy.Symbol('r_p', real=True, positive=True), rp), "Radius of Periapsis", "The minimum distance between the primary focus of the orbit and the satellite", vallado_4e("p. 2"), Length)
+        return EquationDefinition(sy.Eq(self.radius_of_periapsis_sy, rp), "Radius of Periapsis", "The minimum distance between the primary focus of the orbit and the satellite", vallado_4e("p. 2"), Length)
 
     @cached_property
     def radius_of_apoapsis(self)-> EquationDefinition:
@@ -137,6 +165,11 @@ class KeplerianEquations:
         fpaSy = self.flight_path_angle_sy
         return EquationDefinition(sy.Eq(fpaSy, flight_path_angle), "Flight Path Angle", "The quadrant-checked flight path angle with respect to the the eccentric anomaly", vallado_4e("Simplified from other expressions"), Angle)
 
+    @cached_property
+    def flight_path_angle_parabolic(self) -> EquationDefinition:
+        flight_path_angle = self.true_anomaly/2
+        fpaSy = self.flight_path_angle_sy
+        return EquationDefinition(sy.Eq(fpaSy, flight_path_angle), "Flight Path Angle - Parabolic", "The flight path angle with respect to the the parabolic anomaly", vallado_4e("p. 2"), Angle)
 
     @cached_property
     def angular_momentum(self)-> EquationDefinition:
@@ -165,7 +198,6 @@ class KeplerianEquations:
         values_dict[self.flight_path_angle_sy] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
 
 
-
         evaluated_values[self.orbital_radius] = self.orbital_radius.evaluate_expr(values_dict)
         evaluated_values[self.circular_velocity] = self.circular_velocity.evaluate_expr(values_dict)
         evaluated_values[self.escape_velocity] = self.escape_velocity.evaluate_expr(values_dict)
@@ -179,10 +211,20 @@ class KeplerianEquations:
         if ecc < 0.99999:
             evaluated_values[self.radius_of_apoapsis] = self.radius_of_apoapsis.evaluate_expr(values_dict)
             evaluated_values[self.orbital_period] = self.orbital_period.evaluate_expr(values_dict)
-        elif ecc >=0/99999 and ecc < 1.00001:
+            evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = self.eccentric_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
+            evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
+        elif ecc >=0.99999 and ecc < 1.00001:
             evaluated_values[self.radius_of_apoapsis] = math.nan
-        else:
+            evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = self.parabolic_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
+            evaluated_values[self.parabolic_anomaly_wrt_true_anomaly] = evaluated_values[self.eccentric_anomaly_wrt_true_anomaly]
+            evaluated_values[self.flight_path_angle_parabolic] = self.flight_path_angle_parabolic.evaluate_expr(values_dict)
+        else: # greater than 1, hyperbolic
             evaluated_values[self.radius_of_apoapsis] = math.nan
+            evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = self.hyperbolic_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
+            evaluated_values[self.hyperbolic_anomaly_wrt_true_anomaly] = evaluated_values[self.eccentric_anomaly_wrt_true_anomaly]
+            evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
+
+        return evaluated_values
 
     def evaluate_orbital_equations(self, equationDef: EquationDefinition, values_dict: Dict[sy.Symbol, float])->float:
         """

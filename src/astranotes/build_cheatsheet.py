@@ -8,6 +8,7 @@ import sympy as sy
 from datetime import datetime, timezone
 import importlib.metadata as md
 from pathlib import Path
+import re
 
 # === CONFIG ===
 BUILD_DIR = Path(os.path.dirname(__file__)).parent.parent / "build"
@@ -31,32 +32,178 @@ def generate_column_equation_table(equations):
         eq = eqFull.expr
         name = eqFull.name
 
-        # Canonical lhs = rhs
         lhs = eq.lhs
         rhs = eq.rhs
 
         parts = [sy.latex(lhs), sy.latex(rhs)]
-
-        # Append additional RHS-only forms
         for form in getattr(eqFull, "forms", ()):
             parts.append(sy.latex(form.expr))
 
-        # Join into chained equality
         eq_latex = r" = ".join(parts)
+        eq_latex = _split_long_equation_latex(eq_latex, max_len=65)
 
         lines.append(r"\noindent{\footnotesize\textbf{" + name + r"}}")
-        lines.append(r"\vspace{-0.4em}")
-        lines.append(r"\[\small " + eq_latex + r"\]")
+        #lines.append(r"\vspace{-0.4em}")
+        lines.append(r"\[" + eq_latex + r"\]")
 
     return "\n".join(lines)
 
-def build_full_equation_table(circularAndElliptical, parabolic, hyperbolic):
-    half_closed = round(len(circularAndElliptical)/2)
-    max_len = max(half_closed, len(parabolic), len(hyperbolic))
+import re
 
-    def pad_col(col):
-        return col + [("", "")] * (max_len - len(col))
+def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
+    """
+    Split long LaTeX equations at a sensible place.
 
+    Strategy:
+      1. Normalize \\left/\\right to \\bigl/\\bigr.
+      2. Remove wrapper braces around \\bigl...\\bigr groups so line breaks
+         can occur between rows of an aligned environment.
+      3. Prefer splitting at a comma inside a \\bigl(...\\bigr)-style group.
+      4. Fall back to top-level '=' / '+' / '-'.
+
+    Returns either the original equation string or an aligned environment.
+    """
+    if len(eq_latex) <= max_len:
+        return eq_latex
+
+    safe = eq_latex
+
+    # 1) Normalize stretchy delimiters
+    safe = (
+        safe
+        .replace(r"\left(", r"\bigl(")
+        .replace(r"\right)", r"\bigr)")
+        .replace(r"\left[", r"\bigl[")
+        .replace(r"\right]", r"\bigr]")
+        .replace(r"\left\{", r"\bigl\{")
+        .replace(r"\right\}", r"\bigr\}")
+    )
+
+    # 2) Remove outer braces around delimited groups:
+    #    {...\bigl(...\bigr)...} -> ...\bigl(...\bigr)...
+    # This is what makes multiline breaks legal for function arguments.
+    replacements = [
+        (r"{\bigl(", r"\bigl("),
+        (r"\bigr)}", r"\bigr)"),
+        (r"{\bigl[", r"\bigl["),
+        (r"\bigr]}", r"\bigr]"),
+        (r"{\bigl\{", r"\bigl\{"),
+        (r"\bigr\}}", r"\bigr\}"),
+    ]
+    for old, new in replacements:
+        safe = safe.replace(old, new)
+
+    def _find_positions_top_level(s: str, token: str):
+        """Find token positions at brace depth 0."""
+        out = []
+        depth = 0
+        i = 0
+        while i < len(s):
+            ch = s[i]
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth = max(0, depth - 1)
+
+            if depth == 0 and s.startswith(token, i):
+                out.append(i)
+            i += 1
+        return out
+
+    def _find_comma_in_delimited_group(s: str):
+        """
+        Find commas that are inside a \\bigl...\\bigr group but not inside {...}.
+        Returns list of indices.
+        """
+        out = []
+        brace_depth = 0
+        delim_depth = 0
+        i = 0
+
+        open_tokens = [r"\bigl(", r"\bigl[", r"\bigl\{"]
+        close_tokens = [r"\bigr)", r"\bigr]", r"\bigr\}"]
+
+        while i < len(s):
+            # Delimiter tracking first
+            matched = False
+            for tok in open_tokens:
+                if s.startswith(tok, i):
+                    delim_depth += 1
+                    i += len(tok)
+                    matched = True
+                    break
+            if matched:
+                continue
+
+            for tok in close_tokens:
+                if s.startswith(tok, i):
+                    delim_depth = max(0, delim_depth - 1)
+                    i += len(tok)
+                    matched = True
+                    break
+            if matched:
+                continue
+
+            ch = s[i]
+            if ch == "{":
+                brace_depth += 1
+            elif ch == "}":
+                brace_depth = max(0, brace_depth - 1)
+            elif ch == "," and brace_depth == 0 and delim_depth > 0:
+                out.append(i)
+
+            i += 1
+
+        return out
+
+    center = len(safe) / 2
+
+    # 3) Best choice: comma in a delimited argument list
+    comma_positions = _find_comma_in_delimited_group(safe)
+    if comma_positions:
+        idx = min(comma_positions, key=lambda x: abs(x - center))
+        left = safe[:idx + 1]
+        right = safe[idx + 1:].lstrip()
+        return (
+            r"\begin{aligned}"
+            + left
+            + r" \\ "
+            #+ r"& "
+            + right
+            + r"\end{aligned}"
+        )
+
+    # 4) Fallbacks: top-level =, +, -
+    for token in [r" = ", r" + ", r" - "]:
+        positions = _find_positions_top_level(safe, token)
+        if positions:
+            idx = min(positions, key=lambda x: abs(x - center))
+            if token == r" = ":
+                left = safe[:idx]
+                right = safe[idx + len(token):].lstrip()
+                return (
+                    r"\begin{aligned}"
+                    + left
+                    + r" \\ "
+                    + r"&= "
+                    + right
+                    + r"\end{aligned}"
+                )
+            else:
+                left = safe[:idx]
+                right = safe[idx:].lstrip()
+                return (
+                    r"\begin{aligned}"
+                    + left
+                    + r" \\ "
+                    + r"&\qquad "
+                    + right
+                    + r"\end{aligned}"
+                )
+
+    return safe
+
+def build_full_equation_table(equation_columns):
     def wrap_minipage(content):
         return (
             r"\begin{minipage}[t]{\linewidth}"
@@ -66,16 +213,22 @@ def build_full_equation_table(circularAndElliptical, parabolic, hyperbolic):
             r"\end{minipage}"
         )
 
+    rendered_cols = [
+        wrap_minipage(generate_column_equation_table(col))
+        for col in equation_columns
+    ]
 
-    col1 = wrap_minipage(generate_column_equation_table(circularAndElliptical[0:half_closed]))
-    col2 = wrap_minipage(generate_column_equation_table(circularAndElliptical[half_closed:]))
-    col3 = wrap_minipage(generate_column_equation_table(parabolic))
-    col4 = wrap_minipage(generate_column_equation_table(hyperbolic))
+    # Pad out to exactly 4 columns if needed
+    while len(rendered_cols) < 4:
+        rendered_cols.append(wrap_minipage(""))
 
     latex_lines = [
         r"\begin{tabular}{p{0.6\linewidth}@{\hspace{5.5em}} p{0.6\linewidth}@{\hspace{5.5em}} p{0.6\linewidth}@{\hspace{5.5em}} p{0.6\linewidth}}",
-        r"\multicolumn{1}{c}{\textbf{\small Circular}} & \multicolumn{1}{c}{\textbf{\small and Elliptical}} & \multicolumn{1}{c}{\textbf{\small Parabolic}} & \multicolumn{1}{c}{\textbf{\small Hyperbolic}} \\[0.5em]",
-                    col1 + r" & " + col2 + r" & " + col3 + r" & " + col4 + r" \\",
+        r"\multicolumn{1}{c}{\textbf{\small Column 1}} & "
+        r"\multicolumn{1}{c}{\textbf{\small Column 2}} & "
+        r"\multicolumn{1}{c}{\textbf{\small Column 3}} & "
+        r"\multicolumn{1}{c}{\textbf{\small Column 4}} \\[0.5em]",
+        rendered_cols[0] + r" & " + rendered_cols[1] + r" & " + rendered_cols[2] + r" & " + rendered_cols[3] + r" \\",
         r"\end{tabular}"
     ]
 
@@ -87,27 +240,42 @@ def generate_latex():
     version = md.version("astranotes")  # or whatever your [project].name is
     generated_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     footer_text = f"AstraNotes v{version} — Generated {generated_utc}"
-
-    equation_methods = [
-        kepler.vis_viva,
-        kepler.mean_motion,
-        kepler.orbital_period,
+    col1_equations = [
         kepler.orbital_radius,
-        kepler.circular_velocity,
-        kepler.escape_velocity,
         kepler.semi_latus_rectum,
-        kepler.velocity_magnitude,
-        kepler.sin_eccentric_anomaly_wrt_true_anomaly,
-        kepler.cos_eccentric_anomaly_wrt_true_anomaly,
-        kepler.eccentric_anomaly_wrt_true_anomaly,
         kepler.radius_of_periapsis,
         kepler.radius_of_apoapsis,
-        kepler.flight_path_angle_wrt_eccentric_anomaly,
-        kepler.angular_momentum
     ]
-    circularAndEllipticalEquations = [equation_methods[0], equation_methods[1], equation_methods[4], equation_methods[2], equation_methods[6], equation_methods[3], equation_methods[7], equation_methods[8], equation_methods[9], equation_methods[10], equation_methods[7], equation_methods[11], equation_methods[12], equation_methods[13], equation_methods[14]]
-    parabolicEquations = [equation_methods[5]]
-    hyperbolicEquations = []
+
+    col2_equations = [
+        kepler.velocity_magnitude,
+        kepler.vis_viva,
+        kepler.circular_velocity,
+        kepler.escape_velocity,
+        kepler.angular_momentum,
+    ]
+
+    col3_equations = [
+        kepler.mean_motion,
+        kepler.orbital_period,
+        kepler.eccentric_anomaly_wrt_true_anomaly,
+        kepler.flight_path_angle_wrt_eccentric_anomaly,
+    ]
+
+    col4_equations = [
+        kepler.parabolic_anomaly_wrt_true_anomaly,
+        kepler.flight_path_angle_parabolic,
+        kepler.hyperbolic_anomaly_wrt_true_anomaly,
+    ]
+
+    equation_columns = [
+        col1_equations,
+        col2_equations,
+        col3_equations,
+        col4_equations,
+    ]
+    latex_table = build_full_equation_table(equation_columns)
+
     latex_lines = [
 r"\documentclass[10pt]{article}",
 r"\usepackage[landscape, margin=1in]{geometry}",
@@ -157,11 +325,6 @@ r"\begin{multicols}{4}"
     #     latex_lines.append(equation_latex )
     #     latex_lines.append(r"\end{align*}")
     #     latex_lines.append("")
-    latex_table = build_full_equation_table(
-        circularAndEllipticalEquations,
-        parabolicEquations,
-        hyperbolicEquations
-    )
 
     # Now latex_table is a list of lines; write it into your .tex file or
     # include in your document body.
@@ -171,7 +334,7 @@ r"\begin{multicols}{4}"
     latex_lines.append(r"\clearpage")  # separate final page
 
     # add sources content
-    latex_lines.extend(render_sources_latex([EquationGroup('', equation_methods)]))
+    latex_lines.extend(render_sources_latex([EquationGroup('', [eq for col in equation_columns for eq in col])]))
     latex_lines.append(r"\vspace{0.75em}")
     latex_lines.append(r"\noindent{\footnotesize\textbf{Note on atan2:} "
                     r"This sheet uses $\mathrm{atan2}(y, x)$ (sine term/$y$ first, cosine term/$x$ second) "
