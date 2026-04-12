@@ -32,6 +32,8 @@ class KeplerianEquations:
         self.ecc_ano_sy = sy.Symbol('E', real=True)
         self.para_ano_sy = sy.Symbol('B', real=True)
         self.hyp_ano_sy = sy.Symbol('H', real=True)
+        self.ma_sy = sy.Symbol('M', real=True)
+        self.angular_momentum_sy = sy.Symbol('h', real=True, positive=True)
 
 
     @cached_property
@@ -175,16 +177,32 @@ class KeplerianEquations:
     def angular_momentum(self)-> EquationDefinition:
         expr = sy.sqrt(self.mu* self.p_sy)
         form1 = self.r_sy*self.velocity_sy*sy.cos(self.flight_path_angle_sy)
-        equ_def = EquationDefinition(sy.Eq(sy.Symbol('h', real=True, positive=True), expr), "Specific Angular Momentum", "The magnitude of the angular momentum vecor", vallado_4e("p. 2"), Length*Length/Time, (EquationForm(form1),))
+        equ_def = EquationDefinition(sy.Eq(self.angular_momentum_sy, expr), "Specific Angular Momentum", "The magnitude of the angular momentum vecor", vallado_4e("p. 2"), Length*Length/Time, (EquationForm(form1),))
         return equ_def
 
+    @cached_property
+    def mean_anomaly_ellitpical(self) -> EquationDefinition:
+        return EquationDefinition(sy.Eq(self.ma_sy, self.eccentric_anomaly_sy - self.e*sy.sin(self.eccentric_anomaly_sy)), "Mean Anomaly (Elliptical)", "The time-based angle around the orbit", vallado_4e("p. 2"), Angle)
+
+    @cached_property
+    def mean_anomaly_hyperbolic(self) -> EquationDefinition:
+        return EquationDefinition(sy.Eq(self.ma_sy, self.e*sy.sinh(self.hyp_ano_sy) - self.hyp_ano_sy), "Mean Anomaly (Hyperbolic)", "The time-based angle around the orbit", vallado_4e("p. 2"), Angle)
+
+    @cached_property
+    def semi_latus_rectum_parabolic(self)->EquationDefinition:
+        return EquationDefinition(sy.Eq(self.p_sy, (self.angular_momentum_sy**2)/self.mu), "Semi-Latus Rectum (Parabolic)", "The semi-parameter for parabolic orbits", vallado_4e("p. 3"), Length)
 
     def evaluate_my_equations(self, initial_values_dict : Dict[sy.Symbol, float]) -> Dict[EquationDefinition, float]:
+        values_dict = initial_values_dict.copy()
         evaluated_values = {}
 
-        values_dict = initial_values_dict.copy()
+        ecc = values_dict[self.e]
 
-        values_dict[self.p_sy] = self.semi_latus_rectum.evaluate_expr(values_dict)
+        if ecc < 0.99999 and ecc >  1.00001:
+            values_dict[self.p_sy] = self.semi_latus_rectum_parabolic.evaluate_expr(values_dict)
+        else:
+            values_dict[self.p_sy] = self.semi_latus_rectum.evaluate_expr(values_dict)
+
         evaluated_values[self.semi_latus_rectum] = values_dict[self.p_sy]
 
         values_dict[self.r_sy] = self.orbital_radius.evaluate_expr(values_dict)
@@ -207,23 +225,26 @@ class KeplerianEquations:
         evaluated_values[self.radius_of_periapsis] = self.radius_of_periapsis.evaluate_expr(values_dict)
 
 
-        ecc = values_dict[self.e]
         if ecc < 0.99999:
             evaluated_values[self.radius_of_apoapsis] = self.radius_of_apoapsis.evaluate_expr(values_dict)
             evaluated_values[self.orbital_period] = self.orbital_period.evaluate_expr(values_dict)
             evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = self.eccentric_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
+            evaluated_values[self.mean_anomaly_ellitpical] = self.mean_anomaly_ellitpical.evaluate_expr(values_dict)
         elif ecc >=0.99999 and ecc < 1.00001:
             evaluated_values[self.radius_of_apoapsis] = math.nan
             evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = self.parabolic_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.parabolic_anomaly_wrt_true_anomaly] = evaluated_values[self.eccentric_anomaly_wrt_true_anomaly]
             evaluated_values[self.flight_path_angle_parabolic] = self.flight_path_angle_parabolic.evaluate_expr(values_dict)
+
         else: # greater than 1, hyperbolic
             evaluated_values[self.radius_of_apoapsis] = math.nan
-            evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = self.hyperbolic_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
+
+            values_dict[self.hyp_ano_sy] = self.hyperbolic_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
+            evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = values_dict[self.hyp_ano_sy]
             evaluated_values[self.hyperbolic_anomaly_wrt_true_anomaly] = evaluated_values[self.eccentric_anomaly_wrt_true_anomaly]
             evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
-
+            evaluated_values[self.mean_anomaly_hyperbolic] = self.mean_anomaly_hyperbolic.evaluate_expr(values_dict)
         return evaluated_values
 
     def evaluate_orbital_equations(self, equationDef: EquationDefinition, values_dict: Dict[sy.Symbol, float])->float:

@@ -1,7 +1,15 @@
 For 1.0
 - More equations
 - Spacing/formating (in pdf especally, but might be good enough)
-- Combine circular and elliptical in notebook
 - Fix bugs
--- True anomaly arc in notebook diagram is backwards
 - Make a pipeline for deploying notebook
+
+For v2.0
+- Time system equations
+- Export an excel file from equations
+- Export a python class to do simple evaluations
+
+For later
+- Reference frame transforms
+- Keplerian <-> Cartesian
+- Fast Variable back-and-forths (evaluate true anomaly from mean anomaly kind of thing)

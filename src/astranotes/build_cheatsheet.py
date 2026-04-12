@@ -174,32 +174,35 @@ def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
         )
 
     # 4) Fallbacks: top-level =, +, -
-    for token in [r" = ", r" + ", r" - "]:
+    # First try top-level + / -
+    for token in [r" + ", r" - "]:
         positions = _find_positions_top_level(safe, token)
         if positions:
             idx = min(positions, key=lambda x: abs(x - center))
-            if token == r" = ":
-                left = safe[:idx]
-                right = safe[idx + len(token):].lstrip()
-                return (
-                    r"\begin{aligned}"
-                    + left
-                    + r" \\ "
-                    + r"&= "
-                    + right
-                    + r"\end{aligned}"
-                )
-            else:
-                left = safe[:idx]
-                right = safe[idx:].lstrip()
-                return (
-                    r"\begin{aligned}"
-                    + left
-                    + r" \\ "
-                    + r"&\qquad "
-                    + right
-                    + r"\end{aligned}"
-                )
+            left = safe[:idx]
+            right = safe[idx:].lstrip()
+            return (
+                r"\begin{aligned}"
+                + left
+                + r" \\ "
+                + right
+                + r"\end{aligned}"
+            )
+
+    # Only split on equals if there is a chain of equalities
+    if safe.count(" = ") > 1:
+        positions = _find_positions_top_level(safe, r" = ")
+        if positions:
+            idx = min(positions, key=lambda x: abs(x - center))
+            left = safe[:idx]
+            right = safe[idx + len(r" = "):].lstrip()
+            return (
+                r"\begin{aligned}"
+                + left
+                + r" \\ "
+                + r"= " + right
+                + r"\end{aligned}"
+            )
 
     return safe
 
@@ -253,6 +256,7 @@ def generate_latex():
         kepler.circular_velocity,
         kepler.escape_velocity,
         kepler.angular_momentum,
+        kepler.mean_anomaly_ellitpical
     ]
 
     col3_equations = [
@@ -263,9 +267,11 @@ def generate_latex():
     ]
 
     col4_equations = [
+        kepler.semi_latus_rectum_parabolic,
         kepler.parabolic_anomaly_wrt_true_anomaly,
         kepler.flight_path_angle_parabolic,
         kepler.hyperbolic_anomaly_wrt_true_anomaly,
+        kepler.mean_anomaly_hyperbolic
     ]
 
     equation_columns = [
