@@ -157,12 +157,43 @@ class EquationDefinitionHtmlRender:
         box.layout = widgets.Layout(width="100%")
         return box
 
+class MatrixEquationRenderer(EquationDefinitionHtmlRender):
+
+    def convert_native_to_display(self, native_value):
+        # native_value is a sy.Matrix; convert each element
+        if self.current_unit is None:
+            raise RuntimeError("current_unit is not set.")
+        return native_value.applyfunc(self.current_unit.from_native)
+
+    def update_value(self, display_value) -> None:
+        if not isinstance(display_value, sy.Matrix) and not isinstance(display_value, sy.ImmutableDenseMatrix):
+            self.result.value = "<div style='color:#a33'>Not a matrix result</div>"
+            return
+
+        rows, cols = display_value.shape
+        cells = ""
+        for r in range(rows):
+            cells += "<tr>"
+            for c in range(cols):
+                val = float(display_value[r, c])
+                cells += f"<td style='padding:2px 8px; text-align:right'>{_format_number(val)}</td>"
+            cells += "</tr>"
+
+        unit_html = self.current_unit.pretty_abbreviation() if hasattr(self.current_unit, "pretty_abbreviation") else self.current_unit.abbreviation
+        self.result.value = (
+            f"<table style='font-size:1.0em; border-collapse:collapse'>{cells}</table>"
+            f"<div style='color:#444; font-size:0.9em'>{unit_html}</div>"
+        )
+
 
 def create_equation_renderers(groups: List[EquationGroup]) -> List[EquationDefinitionHtmlRender]:
     renderers: List[EquationDefinitionHtmlRender] = []
     for group in groups:
         for eq in group.equations:
-            renderers.append(EquationDefinitionHtmlRender(eq))
+            if hasattr(eq.expr.lhs, "shape"):
+                renderers.append(MatrixEquationRenderer(eq))
+            else:
+                renderers.append(EquationDefinitionHtmlRender(eq))
     return renderers
 
 

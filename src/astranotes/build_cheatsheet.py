@@ -271,7 +271,8 @@ def generate_latex():
         kepler.parabolic_anomaly_wrt_true_anomaly,
         kepler.flight_path_angle_parabolic,
         kepler.hyperbolic_anomaly_wrt_true_anomaly,
-        kepler.mean_anomaly_hyperbolic
+        kepler.mean_anomaly_hyperbolic,
+        kepler.test_vector
     ]
 
     equation_columns = [

@@ -192,6 +192,17 @@ class KeplerianEquations:
     def semi_latus_rectum_parabolic(self)->EquationDefinition:
         return EquationDefinition(sy.Eq(self.p_sy, (self.angular_momentum_sy**2)/self.mu), "Semi-Latus Rectum (Parabolic)", "The semi-parameter for parabolic orbits", vallado_4e("p. 3"), Length)
 
+    @cached_property
+    def test_vector(self) -> EquationDefinition:
+        r_vec = sy.Matrix([
+            self.r_sy * sy.cos(self.true_anomaly),
+            self.r_sy * sy.sin(self.true_anomaly),
+            sy.Integer(0)
+        ])
+        lhs = sy.MatrixSymbol(r'\vec{r}', 3, 1)
+        eq = sy.Eq(lhs, r_vec)
+        return EquationDefinition(eq, "TEST VECTOR", "TEST VECTOR TEST", vallado_4e("TEST"), Length)
+
     def evaluate_my_equations(self, initial_values_dict : Dict[sy.Symbol, float]) -> Dict[EquationDefinition, float]:
         values_dict = initial_values_dict.copy()
         evaluated_values = {}
@@ -245,6 +256,9 @@ class KeplerianEquations:
             evaluated_values[self.hyperbolic_anomaly_wrt_true_anomaly] = evaluated_values[self.eccentric_anomaly_wrt_true_anomaly]
             evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.mean_anomaly_hyperbolic] = self.mean_anomaly_hyperbolic.evaluate_expr(values_dict)
+
+        evaluated_values[self.test_vector] = self.test_vector.evaluate_expr(values_dict)
+
         return evaluated_values
 
     def evaluate_orbital_equations(self, equationDef: EquationDefinition, values_dict: Dict[sy.Symbol, float])->float:
