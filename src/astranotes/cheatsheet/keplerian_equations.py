@@ -3,7 +3,7 @@ from typing import List, Dict
 from functools import cached_property
 import math
 from astranotes.util.units import Length, Time, Angle, Mass, Dimension, Dimensionless
-from astranotes.util.equation_helpers import EquationDefinition, EquationForm
+from astranotes.util.equation_helpers import EquationDefinition, MatrixEquationDefinition, EquationForm
 from astranotes.util.source_ref import SourceRef
 from astranotes.cheatsheet.common_sources import vallado_4e, bates_mueller_white
 
@@ -201,7 +201,7 @@ class KeplerianEquations:
         ])
         lhs = sy.MatrixSymbol(r'\vec{r}', 3, 1)
         eq = sy.Eq(lhs, r_vec)
-        return EquationDefinition(eq, "TEST VECTOR", "TEST VECTOR TEST", vallado_4e("TEST"), Length)
+        return MatrixEquationDefinition(eq, "TEST VECTOR", "TEST VECTOR TEST", vallado_4e("TEST"), Length)
 
     def evaluate_my_equations(self, initial_values_dict : Dict[sy.Symbol, float]) -> Dict[EquationDefinition, float]:
         values_dict = initial_values_dict.copy()

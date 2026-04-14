@@ -157,6 +157,14 @@ class EquationDefinitionHtmlRender:
         box.layout = widgets.Layout(width="100%", overflow_x='auto')
         return box
 
+class MatrixEquationDefinition(EquationDefinition):
+    """
+    Marker subclass for equations whose result is a SymPy Matrix.
+    No new behaviour — isinstance checks against this class are used to
+    dispatch to MatrixEquationRenderer instead of EquationDefinitionHtmlRender.
+    """
+
+
 class MatrixEquationRenderer(EquationDefinitionHtmlRender):
 
     def convert_native_to_display(self, native_value):
@@ -188,7 +196,7 @@ def create_equation_renderers(groups: List[EquationGroup]) -> List[EquationDefin
     renderers: List[EquationDefinitionHtmlRender] = []
     for group in groups:
         for eq in group.equations:
-            if hasattr(eq.expr.lhs, "shape"):
+            if isinstance(eq, MatrixEquationDefinition):
                 renderers.append(MatrixEquationRenderer(eq))
             else:
                 renderers.append(EquationDefinitionHtmlRender(eq))
