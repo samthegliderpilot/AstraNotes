@@ -154,7 +154,7 @@ class EquationDefinitionHtmlRender:
         )
 
         box = widgets.VBox([label, self.eq_out, self.result])
-        box.layout = widgets.Layout(width="100%")
+        box.layout = widgets.Layout(width="100%", overflow_x='auto')
         return box
 
 class MatrixEquationRenderer(EquationDefinitionHtmlRender):
@@ -171,19 +171,17 @@ class MatrixEquationRenderer(EquationDefinitionHtmlRender):
             return
 
         rows, cols = display_value.shape
+        unit_html = self.current_unit.pretty_abbreviation() if hasattr(self.current_unit, "pretty_abbreviation") else self.current_unit.abbreviation
         cells = ""
         for r in range(rows):
             cells += "<tr>"
             for c in range(cols):
                 val = float(display_value[r, c])
                 cells += f"<td style='padding:2px 8px; text-align:right'>{_format_number(val)}</td>"
+            cells += f"<td style='padding:2px 4px; color:#444; font-size:0.9em'>{unit_html}</td>"
             cells += "</tr>"
 
-        unit_html = self.current_unit.pretty_abbreviation() if hasattr(self.current_unit, "pretty_abbreviation") else self.current_unit.abbreviation
-        self.result.value = (
-            f"<table style='font-size:1.0em; border-collapse:collapse'>{cells}</table>"
-            f"<div style='color:#444; font-size:0.9em'>{unit_html}</div>"
-        )
+        self.result.value = f"<table style='font-size:1.0em; border-collapse:collapse'>{cells}</table>"
 
 
 def create_equation_renderers(groups: List[EquationGroup]) -> List[EquationDefinitionHtmlRender]:
@@ -209,7 +207,7 @@ def render_equation_groups(groups: List[EquationGroup], renderers: List[Equation
         group_box = widgets.GridBox(
             [r.render() for r in group_renderers],
             layout=widgets.Layout(
-                grid_template_columns="repeat(3, 20%)",
+                grid_template_columns="repeat(3, 1fr)",
                 grid_gap="2px"
             )
         )
