@@ -123,10 +123,6 @@ class OrbitalMechanicsWidget:
             dimension=self.mu_dimension,
         )
 
-        # ---- Evaluate button ----
-        self.evaluate_button = widgets.Button(description="Reevaluate", button_style="primary")
-        self.evaluate_button.disabled = not self.inputs_are_valid()
-
         self.orbit_diagram_out = widgets.Output()
 
         # ---- Hook unit changes (single handler) ----
@@ -267,7 +263,7 @@ class OrbitalMechanicsWidget:
         display(self.unit_selectors)
         for w in self.get_field_container_list():
             display(w)
-        display(self.evaluate_button)
+
 
     # ------------------------------------------------------------------
     # Validation
@@ -312,7 +308,6 @@ class OrbitalMechanicsWidget:
 
     def on_input_change(self, change) -> None:
         valid = self.inputs_are_valid()
-        self.evaluate_button.disabled = not valid
 
         if self._suppress_live_eval:
             return

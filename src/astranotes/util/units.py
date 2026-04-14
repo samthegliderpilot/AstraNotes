@@ -232,8 +232,6 @@ class UnitRegistry:
         """
         components = dimension.components
 
-        components = dimension.components
-
         #If dimensionless, return the chosen dimensionless unit
         if not components:
             return selected_base_units[self.DIMENSIONLESS]

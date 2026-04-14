@@ -181,7 +181,7 @@ class KeplerianEquations:
         return equ_def
 
     @cached_property
-    def mean_anomaly_ellitpical(self) -> EquationDefinition:
+    def mean_anomaly_elliptical(self) -> EquationDefinition:
         return EquationDefinition(sy.Eq(self.ma_sy, self.eccentric_anomaly_sy - self.e*sy.sin(self.eccentric_anomaly_sy)), "Mean Anomaly (Elliptical)", "The time-based angle around the orbit", vallado_4e("p. 2"), Angle)
 
     @cached_property
@@ -241,7 +241,7 @@ class KeplerianEquations:
             evaluated_values[self.orbital_period] = self.orbital_period.evaluate_expr(values_dict)
             evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = self.eccentric_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
-            evaluated_values[self.mean_anomaly_ellitpical] = self.mean_anomaly_ellitpical.evaluate_expr(values_dict)
+            evaluated_values[self.mean_anomaly_elliptical] = self.mean_anomaly_elliptical.evaluate_expr(values_dict)
         elif ecc >=0.99999 and ecc < 1.00001:
             evaluated_values[self.radius_of_apoapsis] = math.nan
             evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = self.parabolic_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
@@ -267,7 +267,5 @@ class KeplerianEquations:
         and symbolic parameters from the OrbitalMechanics instance.
         """
 
-        #TODO: Clean this up
-        values_dict = self.setup_values_dict(values_dict)
         result = equationDef.evaluate_expr(values_dict)
         return result

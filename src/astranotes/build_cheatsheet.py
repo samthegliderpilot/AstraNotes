@@ -184,7 +184,7 @@ def generate_latex():
         kepler.circular_velocity,
         kepler.escape_velocity,
         kepler.angular_momentum,
-        kepler.mean_anomaly_ellitpical,
+        kepler.mean_anomaly_elliptical,
         kepler.mean_motion,
         kepler.orbital_period,
         kepler.eccentric_anomaly_wrt_true_anomaly,
