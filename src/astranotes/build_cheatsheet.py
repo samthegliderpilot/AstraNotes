@@ -1,14 +1,13 @@
 import os
+import re
 import subprocess
 from astranotes.cheatsheet.keplerian_equations import KeplerianEquations
 from astranotes.cheatsheet.render_latex_sources import render_sources_latex
 from astranotes.util.equation_helpers import EquationGroup
-from sympy import latex
 import sympy as sy
 from datetime import datetime, timezone
 import importlib.metadata as md
 from pathlib import Path
-import re
 
 # === CONFIG ===
 BUILD_DIR = Path(os.path.dirname(__file__)).parent.parent / "build"
@@ -16,39 +15,38 @@ TEX_FILENAME = "keplerian_cheatsheet.tex"
 PDF_FILENAME = "keplerian_cheatsheet.pdf"
 TEX_PATH = os.path.join(BUILD_DIR, TEX_FILENAME)
 
+
 def ensure_build_dir():
     os.makedirs(BUILD_DIR, exist_ok=True)
 
-def generate_column_equation_table(equations):
+
+def generate_equations_latex(equations) -> str:
     """
-    Generate LaTeX lines for one vertical column of equations.
-    Returns a string (not list).
+    Generate a flat sequence of equation blocks for use directly inside multicols.
+    LaTeX will flow them top-to-bottom, left-to-right, auto-balancing columns.
     """
     lines = []
     lines.append(r"\setlength{\parskip}{0pt}")
     lines.append(r"\setlength{\parindent}{0pt}")
+    lines.append(r"\setlength{\abovedisplayskip}{2pt}")
+    lines.append(r"\setlength{\belowdisplayskip}{2pt}")
 
     for eqFull in equations:
         eq = eqFull.expr
         name = eqFull.name
 
-        lhs = eq.lhs
-        rhs = eq.rhs
-
-        parts = [sy.latex(lhs), sy.latex(rhs)]
+        parts = [sy.latex(eq.lhs), sy.latex(eq.rhs)]
         for form in getattr(eqFull, "forms", ()):
             parts.append(sy.latex(form.expr))
 
         eq_latex = r" = ".join(parts)
         eq_latex = _split_long_equation_latex(eq_latex, max_len=65)
 
-        lines.append(r"\noindent{\footnotesize\textbf{" + name + r"}}")
-        #lines.append(r"\vspace{-0.4em}")
+        lines.append(r"\noindent{\footnotesize\textbf{\mbox{" + name + r"}}}")
         lines.append(r"\[" + eq_latex + r"\]")
 
     return "\n".join(lines)
 
-import re
 
 def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
     """
@@ -81,50 +79,35 @@ def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
 
     # 2) Remove outer braces around delimited groups:
     #    {...\bigl(...\bigr)...} -> ...\bigl(...\bigr)...
-    # This is what makes multiline breaks legal for function arguments.
-    replacements = [
-        (r"{\bigl(", r"\bigl("),
-        (r"\bigr)}", r"\bigr)"),
-        (r"{\bigl[", r"\bigl["),
-        (r"\bigr]}", r"\bigr]"),
-        (r"{\bigl\{", r"\bigl\{"),
-        (r"\bigr\}}", r"\bigr\}"),
-    ]
-    for old, new in replacements:
+    for old, new in [
+        (r"{\bigl(", r"\bigl("),  (r"\bigr)}", r"\bigr)"),
+        (r"{\bigl[", r"\bigl["),  (r"\bigr]}", r"\bigr]"),
+        (r"{\bigl\{", r"\bigl\{"), (r"\bigr\}}", r"\bigr\}"),
+    ]:
         safe = safe.replace(old, new)
 
     def _find_positions_top_level(s: str, token: str):
         """Find token positions at brace depth 0."""
-        out = []
-        depth = 0
-        i = 0
+        out, depth, i = [], 0, 0
         while i < len(s):
             ch = s[i]
             if ch == "{":
                 depth += 1
             elif ch == "}":
                 depth = max(0, depth - 1)
-
             if depth == 0 and s.startswith(token, i):
                 out.append(i)
             i += 1
         return out
 
     def _find_comma_in_delimited_group(s: str):
-        """
-        Find commas that are inside a \\bigl...\\bigr group but not inside {...}.
-        Returns list of indices.
-        """
+        """Find commas inside a \\bigl...\\bigr group but not inside {...}."""
         out = []
-        brace_depth = 0
-        delim_depth = 0
-        i = 0
-
-        open_tokens = [r"\bigl(", r"\bigl[", r"\bigl\{"]
+        brace_depth, delim_depth, i = 0, 0, 0
+        open_tokens  = [r"\bigl(", r"\bigl[", r"\bigl\{"]
         close_tokens = [r"\bigr)", r"\bigr]", r"\bigr\}"]
 
         while i < len(s):
-            # Delimiter tracking first
             matched = False
             for tok in open_tokens:
                 if s.startswith(tok, i):
@@ -134,7 +117,6 @@ def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
                     break
             if matched:
                 continue
-
             for tok in close_tokens:
                 if s.startswith(tok, i):
                     delim_depth = max(0, delim_depth - 1)
@@ -151,9 +133,7 @@ def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
                 brace_depth = max(0, brace_depth - 1)
             elif ch == "," and brace_depth == 0 and delim_depth > 0:
                 out.append(i)
-
             i += 1
-
         return out
 
     center = len(safe) / 2
@@ -162,196 +142,110 @@ def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
     comma_positions = _find_comma_in_delimited_group(safe)
     if comma_positions:
         idx = min(comma_positions, key=lambda x: abs(x - center))
-        left = safe[:idx + 1]
-        right = safe[idx + 1:].lstrip()
-        return (
-            r"\begin{aligned}"
-            + left
-            + r" \\ "
-            #+ r"& "
-            + right
-            + r"\end{aligned}"
-        )
+        left, right = safe[:idx + 1], safe[idx + 1:].lstrip()
+        return r"\begin{aligned}" + left + r" \\ " + right + r"\end{aligned}"
 
-    # 4) Fallbacks: top-level =, +, -
-    # First try top-level + / -
+    # 4) Fallbacks: top-level + / -
     for token in [r" + ", r" - "]:
         positions = _find_positions_top_level(safe, token)
         if positions:
             idx = min(positions, key=lambda x: abs(x - center))
-            left = safe[:idx]
-            right = safe[idx:].lstrip()
-            return (
-                r"\begin{aligned}"
-                + left
-                + r" \\ "
-                + right
-                + r"\end{aligned}"
-            )
+            left, right = safe[:idx], safe[idx:].lstrip()
+            return r"\begin{aligned}" + left + r" \\ " + right + r"\end{aligned}"
 
-    # Only split on equals if there is a chain of equalities
+    # 5) Split on equals only when there is a chain of equalities
     if safe.count(" = ") > 1:
         positions = _find_positions_top_level(safe, r" = ")
         if positions:
             idx = min(positions, key=lambda x: abs(x - center))
             left = safe[:idx]
             right = safe[idx + len(r" = "):].lstrip()
-            return (
-                r"\begin{aligned}"
-                + left
-                + r" \\ "
-                + r"= " + right
-                + r"\end{aligned}"
-            )
+            return r"\begin{aligned}" + left + r" \\ = " + right + r"\end{aligned}"
 
     return safe
 
-def build_full_equation_table(equation_columns):
-    def wrap_minipage(content):
-        return (
-            r"\begin{minipage}[t]{\linewidth}"
-            r"\setlength{\abovedisplayskip}{2pt}"
-            r"\setlength{\belowdisplayskip}{2pt}"
-            "\n" + content + "\n"
-            r"\end{minipage}"
-        )
-
-    rendered_cols = [
-        wrap_minipage(generate_column_equation_table(col))
-        for col in equation_columns
-    ]
-
-    # Pad out to exactly 4 columns if needed
-    while len(rendered_cols) < 4:
-        rendered_cols.append(wrap_minipage(""))
-
-    latex_lines = [
-        r"\begin{tabular}{p{0.6\linewidth}@{\hspace{5.5em}} p{0.6\linewidth}@{\hspace{5.5em}} p{0.6\linewidth}@{\hspace{5.5em}} p{0.6\linewidth}}",
-        r"\multicolumn{1}{c}{\textbf{\small Column 1}} & "
-        r"\multicolumn{1}{c}{\textbf{\small Column 2}} & "
-        r"\multicolumn{1}{c}{\textbf{\small Column 3}} & "
-        r"\multicolumn{1}{c}{\textbf{\small Column 4}} \\[0.5em]",
-        rendered_cols[0] + r" & " + rendered_cols[1] + r" & " + rendered_cols[2] + r" & " + rendered_cols[3] + r" \\",
-        r"\end{tabular}"
-    ]
-
-    return latex_lines
 
 def generate_latex():
     kepler = KeplerianEquations()
 
-    version = md.version("astranotes")  # or whatever your [project].name is
+    version = md.version("astranotes")
     generated_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     footer_text = f"AstraNotes v{version} — Generated {generated_utc}"
-    col1_equations = [
+
+    # Add equations here in the order you want them to appear.
+    # multicols will flow them top-to-bottom then left-to-right automatically.
+    equations = [
         kepler.orbital_radius,
         kepler.semi_latus_rectum,
         kepler.radius_of_periapsis,
         kepler.radius_of_apoapsis,
-    ]
-
-    col2_equations = [
         kepler.velocity_magnitude,
         kepler.vis_viva,
         kepler.circular_velocity,
         kepler.escape_velocity,
         kepler.angular_momentum,
-        kepler.mean_anomaly_ellitpical
-    ]
-
-    col3_equations = [
+        kepler.mean_anomaly_ellitpical,
         kepler.mean_motion,
         kepler.orbital_period,
         kepler.eccentric_anomaly_wrt_true_anomaly,
         kepler.flight_path_angle_wrt_eccentric_anomaly,
-    ]
-
-    col4_equations = [
         kepler.semi_latus_rectum_parabolic,
         kepler.parabolic_anomaly_wrt_true_anomaly,
         kepler.flight_path_angle_parabolic,
         kepler.hyperbolic_anomaly_wrt_true_anomaly,
         kepler.mean_anomaly_hyperbolic,
-        kepler.test_vector
+        kepler.test_vector,
     ]
-
-    equation_columns = [
-        col1_equations,
-        col2_equations,
-        col3_equations,
-        col4_equations,
-    ]
-    latex_table = build_full_equation_table(equation_columns)
 
     latex_lines = [
-r"\documentclass[10pt]{article}",
-r"\usepackage[landscape, margin=1in]{geometry}",
-r"\usepackage{amsmath}",
-r"\usepackage{titlesec}",
-r"\usepackage{multicol}",
-r"\usepackage{fancyhdr}",
-r"\usepackage{lastpage}",  # optional, only if you want Page X of Y
-r"\pagestyle{fancy}",
-r"\fancyhf{}",  # clear header/footer
-rf"\fancyfoot[C]{{\footnotesize {footer_text}}}",
-r"\renewcommand{\headrulewidth}{0pt}",
-r"\renewcommand{\footrulewidth}{0.4pt}",
-# Remove spacing from section titles if desired
-r"\titlespacing*{\section}{0pt}{*0}{*0}",
-r"\titlespacing*{\subsection}{0pt}{*0}{*0}",
-
-# Reduce paragraph spacing to pack more
-r"\setlength{\parskip}{0pt}",
-r"\setlength{\parindent}{0pt}",
-r"\setlength{\abovedisplayskip}{5pt}",
-r"\setlength{\belowdisplayskip}{5pt}",
-
-r"\begin{document}",
-r"\vspace*{-1.5em}",
-# Custom title block - smaller font, top-left, one line
-r"{\small",
-r"\noindent",
-r"\textbf{AstraNotes Cheat Sheet: Keplerian Orbits} \quad --- \quad \textit{SamTheGliderPilot}",
-r"}",
-
-r"\vspace{1em}  % small vertical space before the rest",
-
-r"\section*{Keplerian Orbital Equations}",
-r"\begin{multicols}{4}"
-
+        r"\documentclass[10pt]{article}",
+        r"\usepackage[landscape, top=0.5in, bottom=0.6in, left=0.6in, right=0.6in]{geometry}",
+        r"\usepackage{amsmath}",
+        r"\usepackage{titlesec}",
+        r"\usepackage{multicol}",
+        r"\usepackage{fancyhdr}",
+        r"\usepackage{lastpage}",
+        r"\pagestyle{fancy}",
+        r"\fancyhf{}",
+        rf"\fancyfoot[C]{{\footnotesize {footer_text}}}",
+        r"\renewcommand{\headrulewidth}{0pt}",
+        r"\renewcommand{\footrulewidth}{0.4pt}",
+        r"\setlength{\columnseprule}{0.4pt}",
+        r"\titlespacing*{\section}{0pt}{*0}{*0}",
+        r"\titlespacing*{\subsection}{0pt}{*0}{*0}",
+        r"\setlength{\parskip}{0pt}",
+        r"\setlength{\parindent}{0pt}",
+        r"\setlength{\abovedisplayskip}{5pt}",
+        r"\setlength{\belowdisplayskip}{5pt}",
+        r"\begin{document}",
+        r"\vspace*{-1.5em}",
+        r"{\small",
+        r"\noindent",
+        r"\textbf{AstraNotes Cheat Sheet: Keplerian Orbits} \quad --- \quad \textsc{SamTheGliderPilot}",
+        r"}",
+        r"\vspace{1em}",
+        r"\section*{Keplerian Orbital Equations}",
+        r"\begin{multicols}{4}",
+        generate_equations_latex(equations),
+        r"\end{multicols}",
+        r"\clearpage",
     ]
 
-
-
-    # for method in equation_methods:
-    #     eq_def = method()
-    #     equation_latex = latex(eq_def.expr, mode='plain')
-    #     print("Generated LaTeX:", repr(equation_latex))
-    #     latex_lines.append(r"\subsection*{" + eq_def.name + r"}")
-    #     latex_lines.append(r"\begin{align*}")
-    #     latex_lines.append(equation_latex )
-    #     latex_lines.append(r"\end{align*}")
-    #     latex_lines.append("")
-
-    # Now latex_table is a list of lines; write it into your .tex file or
-    # include in your document body.
-    for line in latex_table:
-        latex_lines.append(line)
-    latex_lines.append(r"\end{multicols}")
-    latex_lines.append(r"\clearpage")  # separate final page
-
-    # add sources content
-    latex_lines.extend(render_sources_latex([EquationGroup('', [eq for col in equation_columns for eq in col])]))
+    # Sources page
+    latex_lines.extend(render_sources_latex([EquationGroup('', equations)]))
     latex_lines.append(r"\vspace{0.75em}")
-    latex_lines.append(r"\noindent{\footnotesize\textbf{Note on atan2:} "
-                    r"This sheet uses $\mathrm{atan2}(y, x)$ (sine term/$y$ first, cosine term/$x$ second) "
-                    r"to preserve quadrant.}")
+    latex_lines.append(
+        r"\noindent{\footnotesize\textbf{Note on atan2:} "
+        r"This sheet uses $\mathrm{atan2}(y, x)$ (sine term/$y$ first, cosine term/$x$ second) "
+        r"to preserve quadrant.}"
+    )
     latex_lines.append(r"\end{document}")
 
     with open(TEX_PATH, "w", encoding="utf-8") as f:
         f.write("\n".join(latex_lines))
 
     print(f"+ LaTeX file written to {TEX_PATH}")
+
 
 def compile_pdf():
     print("Compiling LaTeX to PDF...")
@@ -363,8 +257,8 @@ def compile_pdf():
     )
     print(f"[✓] PDF built at {os.path.join(BUILD_DIR, PDF_FILENAME)}")
 
+
 def clean_aux_files():
-    # Clean common aux files
     extensions = [".aux", ".log", ".out"]
     for ext in extensions:
         file_path = os.path.join(BUILD_DIR, TEX_FILENAME.replace(".tex", ext))
@@ -372,11 +266,13 @@ def clean_aux_files():
             os.remove(file_path)
             print(f"[-] Removed {file_path}")
 
+
 def main():
     ensure_build_dir()
     generate_latex()
     compile_pdf()
     clean_aux_files()
+
 
 if __name__ == "__main__":
     main()
