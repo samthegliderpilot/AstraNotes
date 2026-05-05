@@ -3,7 +3,7 @@ from typing import List, Dict
 from functools import cached_property
 import math
 from astranotes.util.units import Length, Time, Angle, Mass, Dimension, Dimensionless
-from astranotes.util.equation_helpers import EquationDefinition, MatrixEquationDefinition, EquationForm
+from astranotes.util.equation_helpers import EquationDefinition, EquationForm
 from astranotes.util.source_ref import SourceRef
 from astranotes.cheatsheet.common_sources import vallado_4e, bates_mueller_white
 
@@ -193,15 +193,34 @@ class KeplerianEquations:
         return EquationDefinition(sy.Eq(self.p_sy, (self.angular_momentum_sy**2)/self.mu), "Semi-Latus Rectum (Parabolic)", "The semi-parameter for parabolic orbits", vallado_4e("p. 3"), Length)
 
     @cached_property
-    def test_vector(self) -> EquationDefinition:
-        r_vec = sy.Matrix([
-            self.r_sy * sy.cos(self.true_anomaly),
-            self.r_sy * sy.sin(self.true_anomaly),
-            sy.Integer(0)
+    def perifocal_radius_vector(self)->EquationDefinition:
+        p = self.p_sy
+        ta = self.true_anomaly
+        e = self.e
+
+        r_per_sy = sy.MatrixSymbol(r'\mathbf{r}_{PQW}', 3, 1)
+        r_per = sy.Matrix([
+            p*sy.cos(ta)/(1+e*sy.cos(ta)),
+            p*sy.sin(ta)/(1+e*sy.cos(ta)),
+            0
         ])
-        lhs = sy.MatrixSymbol(r'\vec{r}', 3, 1)
-        eq = sy.Eq(lhs, r_vec)
-        return MatrixEquationDefinition(eq, "TEST VECTOR", "TEST VECTOR TEST", vallado_4e("TEST"), Length)
+        return EquationDefinition(sy.Eq(r_per_sy, r_per), "Perifocal Radius", "The radius vector of the satellite in the orbit plane of the satellite", vallado_4e("2-104"), Length)
+
+    @cached_property
+    def perifocal_velocity_vector(self)->EquationDefinition:
+        p = self.p_sy
+        ta = self.true_anomaly
+        e = self.e
+        mu = self.mu
+
+        v_per_sy = sy.MatrixSymbol(r'\mathbf{v}_{PQW}', 3, 1)
+        v_per = sy.Matrix([
+            -1*sy.sqrt(mu/p)*sy.sin(ta),
+            sy.sqrt(mu/p)*(e+sy.cos(ta)),
+            0
+        ])
+        return EquationDefinition(sy.Eq(v_per_sy, v_per), "Perifocal Velocity", "The velocity vector of the satellite in the orbit plane of the satellite", vallado_4e("2-106"), Length/Time)
+
 
     def evaluate_my_equations(self, initial_values_dict : Dict[sy.Symbol, float]) -> Dict[EquationDefinition, float]:
         values_dict = initial_values_dict.copy()
@@ -257,7 +276,9 @@ class KeplerianEquations:
             evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.mean_anomaly_hyperbolic] = self.mean_anomaly_hyperbolic.evaluate_expr(values_dict)
 
-        evaluated_values[self.test_vector] = self.test_vector.evaluate_expr(values_dict)
+        #evaluated_values[self.test_vector] = self.test_vector.evaluate_expr(values_dict)
+        evaluated_values[self.perifocal_radius_vector] = self.perifocal_radius_vector.evaluate_expr(values_dict)
+        evaluated_values[self.perifocal_velocity_vector] = self.perifocal_velocity_vector.evaluate_expr(values_dict)
 
         return evaluated_values
 

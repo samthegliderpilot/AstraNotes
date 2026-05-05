@@ -63,6 +63,8 @@ def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
     """
     if len(eq_latex) <= max_len:
         return eq_latex
+    if r"\begin{matrix}" in eq_latex:
+        return eq_latex
 
     safe = eq_latex
 
@@ -194,7 +196,8 @@ def generate_latex():
         kepler.flight_path_angle_parabolic,
         kepler.hyperbolic_anomaly_wrt_true_anomaly,
         kepler.mean_anomaly_hyperbolic,
-        kepler.test_vector,
+        kepler.perifocal_radius_vector,
+        kepler.perifocal_velocity_vector
     ]
 
     latex_lines = [
@@ -203,6 +206,7 @@ def generate_latex():
         r"\usepackage{amsmath}",
         r"\usepackage{titlesec}",
         r"\usepackage{multicol}",
+        r"\usepackage{enumitem}",
         r"\usepackage{fancyhdr}",
         r"\usepackage{lastpage}",
         r"\pagestyle{fancy}",
@@ -255,7 +259,7 @@ def compile_pdf():
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
     )
-    print(f"[✓] PDF built at {os.path.join(BUILD_DIR, PDF_FILENAME)}")
+    print(f"[X] PDF built at {os.path.join(BUILD_DIR, PDF_FILENAME)}")
 
 
 def clean_aux_files():

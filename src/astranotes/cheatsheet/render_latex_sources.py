@@ -48,10 +48,10 @@ def render_sources_latex(
 
     lines: List[str] = []
     lines.append(rf"\section*{{{_latex_escape(section_title)}}}")
+    lines.append(r"\begin{footnotesize}")
     lines.append(r"\setlength{\parskip}{0pt}")
     lines.append(r"\setlength{\parindent}{0pt}")
-    lines.append(r"\setlength{\itemsep}{0pt}")
-    lines.append(r"\setlength{\topsep}{2pt}")
+    lines.append(r"\begin{multicols}{2}")
 
     for sec in sections:
         w = sec.work
@@ -70,11 +70,10 @@ def render_sources_latex(
             parts.append(_latex_escape(w.publisher))
 
         header = " --- ".join([p for p in parts if p])
-        lines.append(r"\subsection*{" + header + r"}")
+        lines.append(r"\noindent\textbf{" + header + r"}")
 
-        lines.append(r"\begin{itemize}")
+        lines.append(r"\begin{itemize}[noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]")
         for e in sec.entries:
-            # left side: equation name (already what you want)
             left = _latex_escape(e.equation_name)
 
             tail_parts = []
@@ -83,14 +82,13 @@ def render_sources_latex(
             if e.notes:
                 tail_parts.append(_latex_escape(e.notes))
 
-            if tail_parts:
-                tail = " --- " + " --- ".join(tail_parts)
-            else:
-                tail = ""
+            tail = " --- " + " --- ".join(tail_parts) if tail_parts else ""
 
             lines.append(rf"\item \textbf{{{left}}}{tail}")
 
         lines.append(r"\end{itemize}")
-        lines.append(r"\vspace{0.5em}")
+
+    lines.append(r"\end{multicols}")
+    lines.append(r"\end{footnotesize}")
 
     return lines
