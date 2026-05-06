@@ -48,6 +48,53 @@ def generate_equations_latex(equations) -> str:
     return "\n".join(lines)
 
 
+def generate_equations_section_latex(equations) -> str:
+    """
+    Emit multicols blocks for all equations, switching to 2-column for wide equations.
+    """
+    preamble = "\n".join([
+        r"\setlength{\parskip}{0pt}",
+        r"\setlength{\parindent}{0pt}",
+        r"\setlength{\abovedisplayskip}{2pt}",
+        r"\setlength{\belowdisplayskip}{2pt}",
+    ])
+
+    lines = [preamble]
+    in_multicols = False
+
+    for eqFull in equations:
+        eq = eqFull.expr
+        name = eqFull.name
+
+        parts = [sy.latex(eq.lhs), sy.latex(eq.rhs)]
+        for form in getattr(eqFull, "forms", ()):
+            parts.append(sy.latex(form.expr))
+        eq_latex = r" = ".join(parts)
+        eq_latex = _split_long_equation_latex(eq_latex, max_len=65)
+
+        name_line = r"\noindent{\footnotesize\textbf{\mbox{" + name + r"}}}"
+
+        if eqFull.wide:
+            if in_multicols:
+                lines.append(r"\end{multicols}")
+                in_multicols = False
+            lines.append(r"\begin{multicols}{2}")
+            lines.append(name_line)
+            lines.append(r"\[\resizebox{\linewidth}{!}{$" + eq_latex + r"$}\]")
+            lines.append(r"\end{multicols}")
+        else:
+            if not in_multicols:
+                lines.append(r"\begin{multicols}{4}")
+                in_multicols = True
+            lines.append(name_line)
+            lines.append(r"\[" + eq_latex + r"\]")
+
+    if in_multicols:
+        lines.append(r"\end{multicols}")
+
+    return "\n".join(lines)
+
+
 def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
     """
     Split long LaTeX equations at a sensible place.
@@ -197,13 +244,17 @@ def generate_latex():
         kepler.hyperbolic_anomaly_wrt_true_anomaly,
         kepler.mean_anomaly_hyperbolic,
         kepler.perifocal_radius_vector,
-        kepler.perifocal_velocity_vector
+        kepler.perifocal_velocity_vector,
+        kepler.perifocal_to_inertial_rotation_matrix,
+        kepler.inertial_radius_vector,
+        kepler.inertial_velocity_vector
     ]
 
     latex_lines = [
         r"\documentclass[10pt]{article}",
         r"\usepackage[landscape, top=0.5in, bottom=0.6in, left=0.6in, right=0.6in]{geometry}",
         r"\usepackage{amsmath}",
+        r"\usepackage{graphicx}",
         r"\usepackage{titlesec}",
         r"\usepackage{multicol}",
         r"\usepackage{enumitem}",
@@ -229,9 +280,7 @@ def generate_latex():
         r"}",
         r"\vspace{1em}",
         r"\section*{Keplerian Orbital Equations}",
-        r"\begin{multicols}{4}",
-        generate_equations_latex(equations),
-        r"\end{multicols}",
+        generate_equations_section_latex(equations),
         r"\clearpage",
     ]
 

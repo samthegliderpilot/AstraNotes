@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import List, Optional, Dict, Sequence
 import ipywidgets as widgets
 import sympy as sy
-from IPython.display import display, Math
+from IPython.display import display
 import math
 from numbers import Real
 from astranotes.util.units import Dimension, Unit
@@ -34,12 +34,13 @@ class EquationForm:
     expr: sy.Expr
 
 class EquationDefinition:
-    def __init__(self, expr: sy.Eq, name: str, explanation: str, source: SourceRef, dimension: Dimension, forms : Sequence[EquationForm] = None):
+    def __init__(self, expr: sy.Eq, name: str, explanation: str, source: SourceRef, dimension: Dimension, forms : Sequence[EquationForm] = None, wide: bool = False):
         self.expr = expr
         self.name = name
         self.explanation = explanation
         self.source = source
         self.dimension = dimension
+        self.wide = wide
         if forms == None:
             forms = ()
         self.forms = forms
@@ -48,7 +49,10 @@ class EquationDefinition:
         return self.source.full() if full else self.source.compact()
 
     def evaluate_expr(self, subsDict : Dict[sy.Basic, float])->float:
-        return self.expr.rhs.subs(subsDict).evalf()
+        result = self.expr.rhs.subs(subsDict)
+        if isinstance(result, sy.MatrixExpr):
+            result = result.doit()
+        return result.evalf()
 
 
 class EquationGroup:
@@ -66,7 +70,7 @@ class EquationDefinitionHtmlRender:
     def __init__(self, equation: EquationDefinition):
         self.equation = equation
 
-        self.eq_out = widgets.Output()
+        self.eq_out = widgets.Output(layout=widgets.Layout(overflow_x='auto'))
         self.result = widgets.HTML(value="")  # display value (number + unit)
         self.current_unit: Optional[Unit] = None
 
@@ -86,9 +90,11 @@ class EquationDefinitionHtmlRender:
 
         latex_str = " = ".join(parts)
 
-        self.eq_out.clear_output(wait=True)
-        with self.eq_out:
-            display(Math(latex_str))
+        self.eq_out.outputs = ({
+            "output_type": "display_data",
+            "data": {"text/latex": f"$\\displaystyle {latex_str}$", "text/plain": latex_str},
+            "metadata": {},
+        },)
 
     def set_display_unit(self, unit: Unit) -> None:
         """
@@ -188,11 +194,22 @@ def create_equation_renderers(groups: List[EquationGroup]) -> List[EquationDefin
     renderers: List[EquationDefinitionHtmlRender] = []
     for group in groups:
         for eq in group.equations:
-            if isinstance(eq.expr.rhs, sy.MatrixBase):
+            if isinstance(eq.expr.rhs, (sy.MatrixBase, sy.MatrixExpr)):
                 renderers.append(MatrixEquationRenderer(eq))
             else:
                 renderers.append(EquationDefinitionHtmlRender(eq))
     return renderers
+
+
+def _make_grid(items: list) -> widgets.GridBox:
+    return widgets.GridBox(
+        items,
+        layout=widgets.Layout(
+            grid_template_columns="repeat(3, 1fr)",
+            grid_gap="2px",
+            width="100%",
+        )
+    )
 
 
 def render_equation_groups(groups: List[EquationGroup], renderers: List[EquationDefinitionHtmlRender]) -> widgets.Widget:
@@ -201,18 +218,24 @@ def render_equation_groups(groups: List[EquationGroup], renderers: List[Equation
 
     for group in groups:
         header = widgets.HTML(value=f"<h3 style='margin-top:10px'>{group.name}</h3>")
-
         group_renderers = [next(renderer_iter) for _ in group.equations]
 
-        group_box = widgets.GridBox(
-            [r.render() for r in group_renderers],
-            layout=widgets.Layout(
-                grid_template_columns="repeat(3, 1fr)",
-                grid_gap="2px"
-            )
-        )
+        section_items = [header]
+        grid_buf = []
 
-        section = widgets.VBox([header, group_box])
-        all_sections.append(section)
+        for r in group_renderers:
+            w = r.render()
+            if r.equation.wide:
+                if grid_buf:
+                    section_items.append(_make_grid(grid_buf))
+                    grid_buf = []
+                section_items.append(w)
+            else:
+                grid_buf.append(w)
+
+        if grid_buf:
+            section_items.append(_make_grid(grid_buf))
+
+        all_sections.append(widgets.VBox(section_items))
 
     return widgets.VBox(all_sections)

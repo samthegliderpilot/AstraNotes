@@ -13,8 +13,8 @@ class KeplerianEquations:
         self.a = sy.Symbol('a', real=True)              # semi-major axis
         self.e = sy.Symbol('e', real=True, positive=True)              # eccentricity
         self.i = sy.Symbol('i', real=True)              # inclination
-        self.raan = sy.Symbol('raan', real=True)        # right ascension of ascending node
-        self.arg_pe = sy.Symbol('arg_pe', real=True)    # argument of periapsis
+        self.raan = sy.Symbol(r'\Omega', real=True)        # right ascension of ascending node
+        self.arg_pe = sy.Symbol(r'\omega', real=True)    # argument of periapsis
         self.true_anomaly = sy.Symbol(r'\nu', real=True)   # true anomaly (often ν)
         self.mu = sy.Symbol(r'\mu', real=True, positive=True)             # gravitational parameter
 
@@ -34,6 +34,9 @@ class KeplerianEquations:
         self.hyp_ano_sy = sy.Symbol('H', real=True)
         self.ma_sy = sy.Symbol('M', real=True)
         self.angular_momentum_sy = sy.Symbol('h', real=True, positive=True)
+        self.r_per_sy = sy.MatrixSymbol(r'\mathbf{r}_{PQW}', 3, 1)
+        self.v_per_sy = sy.MatrixSymbol(r'\mathbf{v}_{PQW}', 3, 1)
+        self.peri_to_inert_mat_sy = sy.MatrixSymbol(r"[\frac{IJK}{PQW}]", 3, 3)
 
 
     @cached_property
@@ -198,13 +201,13 @@ class KeplerianEquations:
         ta = self.true_anomaly
         e = self.e
 
-        r_per_sy = sy.MatrixSymbol(r'\mathbf{r}_{PQW}', 3, 1)
+
         r_per = sy.Matrix([
             p*sy.cos(ta)/(1+e*sy.cos(ta)),
             p*sy.sin(ta)/(1+e*sy.cos(ta)),
             0
         ])
-        return EquationDefinition(sy.Eq(r_per_sy, r_per), "Perifocal Radius", "The radius vector of the satellite in the orbit plane of the satellite", vallado_4e("2-104"), Length)
+        return EquationDefinition(sy.Eq(self.r_per_sy, r_per), "Perifocal Radius", "The radius vector of the satellite in the orbit plane of the satellite", vallado_4e("2-104"), Length)
 
     @cached_property
     def perifocal_velocity_vector(self)->EquationDefinition:
@@ -213,13 +216,40 @@ class KeplerianEquations:
         e = self.e
         mu = self.mu
 
-        v_per_sy = sy.MatrixSymbol(r'\mathbf{v}_{PQW}', 3, 1)
+
         v_per = sy.Matrix([
             -1*sy.sqrt(mu/p)*sy.sin(ta),
             sy.sqrt(mu/p)*(e+sy.cos(ta)),
             0
         ])
-        return EquationDefinition(sy.Eq(v_per_sy, v_per), "Perifocal Velocity", "The velocity vector of the satellite in the orbit plane of the satellite", vallado_4e("2-106"), Length/Time)
+        return EquationDefinition(sy.Eq(self.v_per_sy, v_per), "Perifocal Velocity", "The velocity vector of the satellite in the orbit plane of the satellite", vallado_4e("2-106"), Length/Time)
+
+    @cached_property
+    def perifocal_to_inertial_rotation_matrix(self)->EquationDefinition:
+        cr = sy.cos(self.raan)
+        ca = sy.cos(self.arg_pe)
+        ci = sy.cos(self.i)
+
+        sr = sy.sin(self.raan)
+        sa = sy.sin(self.arg_pe)
+        si = sy.sin(self.i)
+
+        rhs = sy.Matrix([[cr*ca-sr*sa*ci, -1*cr*sa-sr*ca*ci,  sr*si],
+                        [sr*ca+cr*sa*ci, -1*sr*sa+cr*ca*ci, -1*cr*si],
+                        [sa*si,           ca*si,           ci]])
+        return EquationDefinition(sy.Eq(self.peri_to_inert_mat_sy, rhs), "Perifocal to Inertial Rotation Matrix", "The rotation matrix to convert a vector in the perifocal coordinate system to an inertial coordinate system", vallado_4e("Algorithm 10, page 119"), Dimensionless, wide=True)
+
+    @cached_property
+    def inertial_radius_vector(self)->EquationDefinition:
+        lhs = sy.MatrixSymbol("r_{IJK}", 3, 1)
+        rhs = self.peri_to_inert_mat_sy * self.r_per_sy
+        return EquationDefinition(sy.Eq(lhs, rhs), "Radius Vector: Inertial", "The inertial radius vector", vallado_4e("Algorithm 10, page 119"), Length)
+
+    @cached_property
+    def inertial_velocity_vector(self)->EquationDefinition:
+        lhs = sy.MatrixSymbol("v_{IJK}", 3, 1)
+        rhs = self.peri_to_inert_mat_sy * self.v_per_sy
+        return EquationDefinition(sy.Eq(lhs, rhs), "Velocity Vector: Inertial", "The inertial velocity vector", vallado_4e("Algorithm 10, page 119"), Length)
 
 
     def evaluate_my_equations(self, initial_values_dict : Dict[sy.Symbol, float]) -> Dict[EquationDefinition, float]:
@@ -276,9 +306,16 @@ class KeplerianEquations:
             evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.mean_anomaly_hyperbolic] = self.mean_anomaly_hyperbolic.evaluate_expr(values_dict)
 
-        #evaluated_values[self.test_vector] = self.test_vector.evaluate_expr(values_dict)
         evaluated_values[self.perifocal_radius_vector] = self.perifocal_radius_vector.evaluate_expr(values_dict)
         evaluated_values[self.perifocal_velocity_vector] = self.perifocal_velocity_vector.evaluate_expr(values_dict)
+        values_dict[self.r_per_sy] = evaluated_values[self.perifocal_radius_vector]
+        values_dict[self.v_per_sy] = evaluated_values[self.perifocal_velocity_vector]
+        evaluated_values[self.perifocal_to_inertial_rotation_matrix] = self.perifocal_to_inertial_rotation_matrix.evaluate_expr(values_dict)
+        values_dict[self.peri_to_inert_mat_sy] = evaluated_values[self.perifocal_to_inertial_rotation_matrix]
+
+        evaluated_values[self.inertial_radius_vector] = self.inertial_radius_vector.evaluate_expr(values_dict)
+        evaluated_values[self.inertial_velocity_vector] = self.inertial_velocity_vector.evaluate_expr(values_dict)
+
 
         return evaluated_values
 

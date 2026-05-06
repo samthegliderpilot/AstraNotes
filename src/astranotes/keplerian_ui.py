@@ -323,18 +323,16 @@ class OrbitalMechanicsWidget:
         - e dimensionless
         - true_anomaly in radians
         """
-        # Import here to avoid hard dependency at module import time
-        from IPython.display import display, HTML
-
         a = float(native_values[self.orbital.a])
         e = float(native_values[self.orbital.e])
         nu = float(native_values[self.orbital.true_anomaly])  # radians
 
-        self.orbit_diagram_out.clear_output(wait=True)
-        with self.orbit_diagram_out:
-            # orbit_diagram_svg is the drawsvg function we defined earlier
-            dwg = orbit_diagram_svg(a=a, e=e, nu=nu)
-            display(dwg)
+        dwg = orbit_diagram_svg(a=a, e=e, nu=nu)
+        self.orbit_diagram_out.outputs = ({
+            "output_type": "display_data",
+            "data": {"image/svg+xml": dwg._repr_svg_(), "text/plain": "orbit diagram"},
+            "metadata": {},
+        },)
 
 
 def orbit_diagram_svg(
