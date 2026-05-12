@@ -37,6 +37,7 @@ class KeplerianEquations:
         self.r_per_sy = sy.MatrixSymbol(r'\mathbf{r}_{PQW}', 3, 1)
         self.v_per_sy = sy.MatrixSymbol(r'\mathbf{v}_{PQW}', 3, 1)
         self.peri_to_inert_mat_sy = sy.MatrixSymbol(r"[\frac{IJK}{PQW}]", 3, 3)
+        self.inertial_radius_sy = sy.MatrixSymbol("r_{IJK}", 3, 1)
 
 
     @cached_property
@@ -241,7 +242,7 @@ class KeplerianEquations:
 
     @cached_property
     def inertial_radius_vector(self)->EquationDefinition:
-        lhs = sy.MatrixSymbol("r_{IJK}", 3, 1)
+        lhs = self.inertial_radius_sy
         rhs = self.peri_to_inert_mat_sy * self.r_per_sy
         return EquationDefinition(sy.Eq(lhs, rhs), "Radius Vector: Inertial", "The inertial radius vector", vallado_4e("Algorithm 10, page 119"), Length)
 
@@ -250,6 +251,12 @@ class KeplerianEquations:
         lhs = sy.MatrixSymbol("v_{IJK}", 3, 1)
         rhs = self.peri_to_inert_mat_sy * self.v_per_sy
         return EquationDefinition(sy.Eq(lhs, rhs), "Velocity Vector: Inertial", "The inertial velocity vector", vallado_4e("Algorithm 10, page 119"), Length)
+
+    @cached_property
+    def two_body_differential_equation(self) -> EquationDefinition:
+        lhs = sy.MatrixSymbol(r'\ddot{\hat{r}}', 3, 1)
+        rhs = -1*self.mu * self.inertial_radius_sy/(self.r_sy**3)
+        return EquationDefinition(sy.Eq(lhs, rhs), "Two Body Differential Equation", "The inertial acceleration of a satellite in a gravity field", vallado_4e("1-14, page 23"), Length/(Time*Time))
 
 
     def evaluate_my_equations(self, initial_values_dict : Dict[sy.Symbol, float]) -> Dict[EquationDefinition, float]:
@@ -315,7 +322,9 @@ class KeplerianEquations:
 
         evaluated_values[self.inertial_radius_vector] = self.inertial_radius_vector.evaluate_expr(values_dict)
         evaluated_values[self.inertial_velocity_vector] = self.inertial_velocity_vector.evaluate_expr(values_dict)
+        values_dict[self.inertial_radius_sy] = evaluated_values[self.inertial_radius_vector]
 
+        evaluated_values[self.two_body_differential_equation] = self.two_body_differential_equation.evaluate_expr(values_dict)
 
         return evaluated_values
 

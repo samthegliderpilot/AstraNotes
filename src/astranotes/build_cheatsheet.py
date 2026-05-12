@@ -247,7 +247,8 @@ def generate_latex():
         kepler.perifocal_velocity_vector,
         kepler.perifocal_to_inertial_rotation_matrix,
         kepler.inertial_radius_vector,
-        kepler.inertial_velocity_vector
+        kepler.inertial_velocity_vector,
+        kepler.two_body_differential_equation
     ]
 
     latex_lines = [
