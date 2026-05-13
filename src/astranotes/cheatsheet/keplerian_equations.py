@@ -238,7 +238,7 @@ class KeplerianEquations:
         rhs = sy.Matrix([[cr*ca-sr*sa*ci, -1*cr*sa-sr*ca*ci,  sr*si],
                         [sr*ca+cr*sa*ci, -1*sr*sa+cr*ca*ci, -1*cr*si],
                         [sa*si,           ca*si,           ci]])
-        return EquationDefinition(sy.Eq(self.peri_to_inert_mat_sy, rhs), "Perifocal to Inertial Rotation Matrix", "The rotation matrix to convert a vector in the perifocal coordinate system to an inertial coordinate system", vallado_4e("Algorithm 10, page 119"), Dimensionless, wide=True)
+        return EquationDefinition(sy.Eq(self.peri_to_inert_mat_sy, rhs), "Perifocal to Inertial Rotation Matrix", "The rotation matrix to convert a vector in the perifocal coordinate system to an inertial coordinate system", vallado_4e("Algorithm 10, page 119"), Dimensionless)
 
     @cached_property
     def inertial_radius_vector(self)->EquationDefinition:
@@ -250,7 +250,7 @@ class KeplerianEquations:
     def inertial_velocity_vector(self)->EquationDefinition:
         lhs = sy.MatrixSymbol("v_{IJK}", 3, 1)
         rhs = self.peri_to_inert_mat_sy * self.v_per_sy
-        return EquationDefinition(sy.Eq(lhs, rhs), "Velocity Vector: Inertial", "The inertial velocity vector", vallado_4e("Algorithm 10, page 119"), Length)
+        return EquationDefinition(sy.Eq(lhs, rhs), "Velocity Vector: Inertial", "The inertial velocity vector", vallado_4e("Algorithm 10, page 119"), Length/Time)
 
     @cached_property
     def two_body_differential_equation(self) -> EquationDefinition:

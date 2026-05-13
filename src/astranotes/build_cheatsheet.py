@@ -20,79 +20,7 @@ def ensure_build_dir():
     os.makedirs(BUILD_DIR, exist_ok=True)
 
 
-def generate_equations_latex(equations) -> str:
-    """
-    Generate a flat sequence of equation blocks for use directly inside multicols.
-    LaTeX will flow them top-to-bottom, left-to-right, auto-balancing columns.
-    """
-    lines = []
-    lines.append(r"\setlength{\parskip}{0pt}")
-    lines.append(r"\setlength{\parindent}{0pt}")
-    lines.append(r"\setlength{\abovedisplayskip}{2pt}")
-    lines.append(r"\setlength{\belowdisplayskip}{2pt}")
-
-    for eqFull in equations:
-        eq = eqFull.expr
-        name = eqFull.name
-
-        parts = [sy.latex(eq.lhs), sy.latex(eq.rhs)]
-        for form in getattr(eqFull, "forms", ()):
-            parts.append(sy.latex(form.expr))
-
-        eq_latex = r" = ".join(parts)
-        eq_latex = _split_long_equation_latex(eq_latex, max_len=65)
-
-        lines.append(r"\noindent{\footnotesize\textbf{\mbox{" + name + r"}}}")
-        lines.append(r"\[" + eq_latex + r"\]")
-
-    return "\n".join(lines)
-
-
-def generate_equations_section_latex(equations) -> str:
-    """
-    Emit multicols blocks for all equations, switching to 2-column for wide equations.
-    """
-    preamble = "\n".join([
-        r"\setlength{\parskip}{0pt}",
-        r"\setlength{\parindent}{0pt}",
-        r"\setlength{\abovedisplayskip}{2pt}",
-        r"\setlength{\belowdisplayskip}{2pt}",
-    ])
-
-    lines = [preamble]
-    in_multicols = False
-
-    for eqFull in equations:
-        eq = eqFull.expr
-        name = eqFull.name
-
-        parts = [sy.latex(eq.lhs), sy.latex(eq.rhs)]
-        for form in getattr(eqFull, "forms", ()):
-            parts.append(sy.latex(form.expr))
-        eq_latex = r" = ".join(parts)
-        eq_latex = _split_long_equation_latex(eq_latex, max_len=65)
-
-        name_line = r"\noindent{\footnotesize\textbf{\mbox{" + name + r"}}}"
-
-        if eqFull.wide:
-            if in_multicols:
-                lines.append(r"\end{multicols}")
-                in_multicols = False
-            lines.append(r"\begin{multicols}{2}")
-            lines.append(name_line)
-            lines.append(r"\[\resizebox{\linewidth}{!}{$" + eq_latex + r"$}\]")
-            lines.append(r"\end{multicols}")
-        else:
-            if not in_multicols:
-                lines.append(r"\begin{multicols}{4}")
-                in_multicols = True
-            lines.append(name_line)
-            lines.append(r"\[" + eq_latex + r"\]")
-
-    if in_multicols:
-        lines.append(r"\end{multicols}")
-
-    return "\n".join(lines)
+_WIDE_LATEX_THRESHOLD = 300  # chars; above this an equation auto-sizes to col_span=2
 
 
 def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
@@ -214,6 +142,79 @@ def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
     return safe
 
 
+# ---------------------------------------------------------------------------
+# Grid layout
+# ---------------------------------------------------------------------------
+
+GRID_COLS = 4
+COL_UNIT = 0.995 / GRID_COLS   # fraction of \textwidth per column slot
+
+
+class LayoutItem:
+    def __init__(self, equation, col_span: int = None):
+        self.equation = equation
+
+        eq = equation.expr
+        parts = [sy.latex(eq.lhs), sy.latex(eq.rhs)]
+        for form in getattr(equation, "forms", ()):
+            parts.append(sy.latex(form.expr))
+        raw = r" = ".join(parts)
+        self.eq_latex = _split_long_equation_latex(raw, max_len=65)
+
+        if col_span is None:
+            self.col_span = 2 if len(self.eq_latex) > _WIDE_LATEX_THRESHOLD else 1
+        else:
+            self.col_span = col_span
+
+
+def _pack_rows(items: list) -> list:
+    rows, current, remaining = [], [], GRID_COLS
+    for item in items:
+        span = min(item.col_span, GRID_COLS)
+        if span > remaining:
+            if current:
+                rows.append(current)
+            current, remaining = [], GRID_COLS
+        current.append(item)
+        remaining -= span
+    if current:
+        rows.append(current)
+    return rows
+
+
+def _emit_row(row: list) -> list:
+    lines = []
+    for i, item in enumerate(row):
+        is_last = i == len(row) - 1
+        width = f"{item.col_span * COL_UNIT:.4f}"
+        # \noindent and \begin{minipage} on the same line — a newline between
+        # them would become a space token that widens the row past \textwidth.
+        prefix = r"\noindent" if i == 0 else ""
+        lines.append(prefix + rf"\begin{{minipage}}[t]{{{width}\textwidth}}")
+        lines.append(r"\noindent{\footnotesize\textbf{\mbox{" + item.equation.name + r"}}}")
+        if item.col_span > 1:
+            lines.append(r"\[\resizebox{\linewidth}{!}{$" + item.eq_latex + r"$}\]")
+        else:
+            lines.append(r"\[" + item.eq_latex + r"\]")
+        lines.append(r"\end{minipage}" + ("" if is_last else "%"))
+    # \par ends the paragraph (forces a real line break); \smallskip adds row gap.
+    # \smallskip alone uses \vadjust in hmode and never breaks the paragraph.
+    lines.append(r"\par\smallskip")
+    return lines
+
+
+def generate_layout_latex(items: list) -> str:
+    lines = [
+        r"\setlength{\parskip}{0pt}",
+        r"\setlength{\parindent}{0pt}",
+        r"\setlength{\abovedisplayskip}{2pt}",
+        r"\setlength{\belowdisplayskip}{2pt}",
+    ]
+    for row in _pack_rows(items):
+        lines.extend(_emit_row(row))
+    return "\n".join(lines)
+
+
 def generate_latex():
     kepler = KeplerianEquations()
 
@@ -222,33 +223,33 @@ def generate_latex():
     footer_text = f"AstraNotes v{version} — Generated {generated_utc}"
 
     # Add equations here in the order you want them to appear.
-    # multicols will flow them top-to-bottom then left-to-right automatically.
-    equations = [
-        kepler.orbital_radius,
-        kepler.semi_latus_rectum,
-        kepler.radius_of_periapsis,
-        kepler.radius_of_apoapsis,
-        kepler.velocity_magnitude,
-        kepler.vis_viva,
-        kepler.circular_velocity,
-        kepler.escape_velocity,
-        kepler.angular_momentum,
-        kepler.mean_anomaly_elliptical,
-        kepler.mean_motion,
-        kepler.orbital_period,
-        kepler.eccentric_anomaly_wrt_true_anomaly,
-        kepler.flight_path_angle_wrt_eccentric_anomaly,
-        kepler.semi_latus_rectum_parabolic,
-        kepler.parabolic_anomaly_wrt_true_anomaly,
-        kepler.flight_path_angle_parabolic,
-        kepler.hyperbolic_anomaly_wrt_true_anomaly,
-        kepler.mean_anomaly_hyperbolic,
-        kepler.perifocal_radius_vector,
-        kepler.perifocal_velocity_vector,
-        kepler.perifocal_to_inertial_rotation_matrix,
-        kepler.inertial_radius_vector,
-        kepler.inertial_velocity_vector,
-        kepler.two_body_differential_equation
+    # col_span is auto-detected from LaTeX string length; override with col_span=N.
+    items = [
+        LayoutItem(kepler.orbital_radius),
+        LayoutItem(kepler.semi_latus_rectum),
+        LayoutItem(kepler.radius_of_periapsis),
+        LayoutItem(kepler.radius_of_apoapsis),
+        LayoutItem(kepler.velocity_magnitude),
+        LayoutItem(kepler.vis_viva),
+        LayoutItem(kepler.circular_velocity),
+        LayoutItem(kepler.escape_velocity),
+        LayoutItem(kepler.angular_momentum),
+        LayoutItem(kepler.mean_anomaly_elliptical),
+        LayoutItem(kepler.mean_motion),
+        LayoutItem(kepler.orbital_period),
+        LayoutItem(kepler.eccentric_anomaly_wrt_true_anomaly),
+        LayoutItem(kepler.flight_path_angle_wrt_eccentric_anomaly),
+        LayoutItem(kepler.semi_latus_rectum_parabolic),
+        LayoutItem(kepler.parabolic_anomaly_wrt_true_anomaly),
+        LayoutItem(kepler.flight_path_angle_parabolic),
+        LayoutItem(kepler.hyperbolic_anomaly_wrt_true_anomaly),
+        LayoutItem(kepler.mean_anomaly_hyperbolic),
+        LayoutItem(kepler.perifocal_radius_vector),
+        LayoutItem(kepler.perifocal_velocity_vector),
+        LayoutItem(kepler.perifocal_to_inertial_rotation_matrix, col_span=2),
+        LayoutItem(kepler.inertial_radius_vector),
+        LayoutItem(kepler.inertial_velocity_vector),
+        LayoutItem(kepler.two_body_differential_equation),
     ]
 
     latex_lines = [
@@ -266,7 +267,6 @@ def generate_latex():
         rf"\fancyfoot[C]{{\footnotesize {footer_text}}}",
         r"\renewcommand{\headrulewidth}{0pt}",
         r"\renewcommand{\footrulewidth}{0.4pt}",
-        r"\setlength{\columnseprule}{0.4pt}",
         r"\titlespacing*{\section}{0pt}{*0}{*0}",
         r"\titlespacing*{\subsection}{0pt}{*0}{*0}",
         r"\setlength{\parskip}{0pt}",
@@ -281,12 +281,12 @@ def generate_latex():
         r"}",
         r"\vspace{1em}",
         r"\section*{Keplerian Orbital Equations}",
-        generate_equations_section_latex(equations),
+        generate_layout_latex(items),
         r"\clearpage",
     ]
 
     # Sources page
-    latex_lines.extend(render_sources_latex([EquationGroup('', equations)]))
+    latex_lines.extend(render_sources_latex([EquationGroup('', [item.equation for item in items])]))
     latex_lines.append(r"\vspace{0.75em}")
     latex_lines.append(
         r"\noindent{\footnotesize\textbf{Note on atan2:} "

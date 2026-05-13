@@ -34,13 +34,12 @@ class EquationForm:
     expr: sy.Expr
 
 class EquationDefinition:
-    def __init__(self, expr: sy.Eq, name: str, explanation: str, source: SourceRef, dimension: Dimension, forms : Sequence[EquationForm] = None, wide: bool = False):
+    def __init__(self, expr: sy.Eq, name: str, explanation: str, source: SourceRef, dimension: Dimension, forms : Sequence[EquationForm] = None):
         self.expr = expr
         self.name = name
         self.explanation = explanation
         self.source = source
         self.dimension = dimension
-        self.wide = wide
         if forms == None:
             forms = ()
         self.forms = forms
@@ -190,26 +189,60 @@ class MatrixEquationRenderer(EquationDefinitionHtmlRender):
         self.result.value = f"<table style='font-size:1.0em; border-collapse:collapse'>{cells}</table>"
 
 
+NOTEBOOK_GRID_COLS = 3
+
+
+class NotebookLayoutItem:
+    """Wraps an EquationDefinition with an explicit or auto-detected col_span."""
+
+    def __init__(self, equation: EquationDefinition, col_span: int = None):
+        self.equation = equation
+        if col_span is None:
+            self.col_span = _auto_notebook_col_span(equation)
+        else:
+            self.col_span = max(1, min(col_span, NOTEBOOK_GRID_COLS))
+
+
+def _auto_notebook_col_span(eq_def: EquationDefinition) -> int:
+    rhs = eq_def.expr.rhs
+    if isinstance(rhs, (sy.MatrixBase, sy.MatrixExpr)):
+        shape = getattr(rhs, 'shape', None)
+        if shape and min(shape) > 1:
+            return NOTEBOOK_GRID_COLS
+    return 1
+
+
+def _as_layout_item(eq) -> NotebookLayoutItem:
+    if isinstance(eq, NotebookLayoutItem):
+        return eq
+    return NotebookLayoutItem(eq)
+
+
+def _pack_notebook_rows(paired: list) -> list:
+    rows, current, remaining = [], [], NOTEBOOK_GRID_COLS
+    for item, renderer in paired:
+        span = min(item.col_span, NOTEBOOK_GRID_COLS)
+        if span > remaining:
+            if current:
+                rows.append(current)
+            current, remaining = [], NOTEBOOK_GRID_COLS
+        current.append((item, renderer))
+        remaining -= span
+    if current:
+        rows.append(current)
+    return rows
+
+
 def create_equation_renderers(groups: List[EquationGroup]) -> List[EquationDefinitionHtmlRender]:
     renderers: List[EquationDefinitionHtmlRender] = []
     for group in groups:
         for eq in group.equations:
-            if isinstance(eq.expr.rhs, (sy.MatrixBase, sy.MatrixExpr)):
-                renderers.append(MatrixEquationRenderer(eq))
+            actual = _as_layout_item(eq).equation
+            if isinstance(actual.expr.rhs, (sy.MatrixBase, sy.MatrixExpr)):
+                renderers.append(MatrixEquationRenderer(actual))
             else:
-                renderers.append(EquationDefinitionHtmlRender(eq))
+                renderers.append(EquationDefinitionHtmlRender(actual))
     return renderers
-
-
-def _make_grid(items: list) -> widgets.GridBox:
-    return widgets.GridBox(
-        items,
-        layout=widgets.Layout(
-            grid_template_columns="repeat(3, 1fr)",
-            grid_gap="2px",
-            width="100%",
-        )
-    )
 
 
 def render_equation_groups(groups: List[EquationGroup], renderers: List[EquationDefinitionHtmlRender]) -> widgets.Widget:
@@ -218,23 +251,23 @@ def render_equation_groups(groups: List[EquationGroup], renderers: List[Equation
 
     for group in groups:
         header = widgets.HTML(value=f"<h3 style='margin-top:10px'>{group.name}</h3>")
+        layout_items = [_as_layout_item(eq) for eq in group.equations]
         group_renderers = [next(renderer_iter) for _ in group.equations]
 
         section_items = [header]
-        grid_buf = []
-
-        for r in group_renderers:
-            w = r.render()
-            if r.equation.wide:
-                if grid_buf:
-                    section_items.append(_make_grid(grid_buf))
-                    grid_buf = []
-                section_items.append(w)
+        for row in _pack_notebook_rows(list(zip(layout_items, group_renderers))):
+            if len(row) == 1 and row[0][0].col_span >= NOTEBOOK_GRID_COLS:
+                section_items.append(row[0][1].render())
             else:
-                grid_buf.append(w)
-
-        if grid_buf:
-            section_items.append(_make_grid(grid_buf))
+                template = " ".join(f"{item.col_span}fr" for item, _ in row)
+                section_items.append(widgets.GridBox(
+                    [r.render() for _, r in row],
+                    layout=widgets.Layout(
+                        grid_template_columns=template,
+                        grid_gap="2px",
+                        width="100%",
+                    )
+                ))
 
         all_sections.append(widgets.VBox(section_items))
 
