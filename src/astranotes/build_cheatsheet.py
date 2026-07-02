@@ -250,6 +250,12 @@ def generate_latex():
         LayoutItem(kepler.inertial_radius_vector),
         LayoutItem(kepler.inertial_velocity_vector),
         LayoutItem(kepler.two_body_differential_equation),
+        LayoutItem(kepler.equinoctial_ecc_cos_term),
+        LayoutItem(kepler.equinoctial_ecc_sin_term),
+        LayoutItem(kepler.equinoctial_inc_cos_term),
+        LayoutItem(kepler.equinoctial_inc_sin_term),
+        LayoutItem(kepler.mean_longitude),
+
     ]
 
     latex_lines = [

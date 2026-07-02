@@ -5,7 +5,7 @@ import math
 from astranotes.util.units import Length, Time, Angle, Mass, Dimension, Dimensionless
 from astranotes.util.equation_helpers import EquationDefinition, EquationForm
 from astranotes.util.source_ref import SourceRef
-from astranotes.cheatsheet.common_sources import vallado_4e, bates_mueller_white
+from astranotes.cheatsheet.common_sources import vallado_4e, bates_mueller_white, degenerate_conic_mee
 
 class KeplerianEquations:
     def __init__(self):
@@ -258,6 +258,35 @@ class KeplerianEquations:
         rhs = -1*self.mu * self.inertial_radius_sy/(self.r_sy**3)
         return EquationDefinition(sy.Eq(lhs, rhs), "Two Body Differential Equation", "The inertial acceleration of a satellite in a gravity field", vallado_4e("1-14, page 23"), Length/(Time*Time))
 
+    @cached_property
+    def equinoctial_ecc_cos_term(self) -> EquationDefinition:
+        lhs = sy.Symbol("f", real=True)
+        rhs = self.e*sy.cos(self.arg_pe+self.raan)
+        return EquationDefinition(sy.Eq(lhs, rhs), "Equinoctial Eccentrity Cosine Term", "The cosine term for the eccentricity term", degenerate_conic_mee(), Dimensionless)
+
+    @cached_property
+    def equinoctial_ecc_sin_term(self) -> EquationDefinition:
+        lhs = sy.Symbol("g", real=True)
+        rhs = self.e*sy.sin(self.arg_pe+self.raan)
+        return EquationDefinition(sy.Eq(lhs, rhs), "Equinoctial Eccentrity Sine Term", "The sine term for the eccentricity term", degenerate_conic_mee(), Dimensionless)
+
+    @cached_property
+    def equinoctial_inc_cos_term(self) -> EquationDefinition:
+        lhs = sy.Symbol("h", real=True)
+        rhs = sy.tan(self.i/2)*sy.cos(self.raan)
+        return EquationDefinition(sy.Eq(lhs, rhs), "Equinoctial Inclination Cosine Term", "The cosine term for the inclination term", degenerate_conic_mee(), Dimensionless)
+
+    @cached_property
+    def equinoctial_inc_sin_term(self) -> EquationDefinition:
+        lhs = sy.Symbol("k", real=True)
+        rhs = sy.tan(self.i/2)*sy.sin(self.raan)
+        return EquationDefinition(sy.Eq(lhs, rhs), "Equinoctial Inclination Sine Term", "The sine term for the inclination term", degenerate_conic_mee(), Dimensionless)
+
+    @cached_property
+    def mean_longitude(self) -> EquationDefinition:
+        lhs = sy.Symbol('L', real=True)
+        rhs = self.raan + self.arg_pe + self.true_anomaly
+        return EquationDefinition(sy.Eq(lhs, rhs), "Mean Longitude", "The inertial longitude", degenerate_conic_mee(), Angle)
 
     def evaluate_my_equations(self, initial_values_dict : Dict[sy.Symbol, float]) -> Dict[EquationDefinition, float]:
         values_dict = initial_values_dict.copy()
@@ -325,6 +354,12 @@ class KeplerianEquations:
         values_dict[self.inertial_radius_sy] = evaluated_values[self.inertial_radius_vector]
 
         evaluated_values[self.two_body_differential_equation] = self.two_body_differential_equation.evaluate_expr(values_dict)
+
+        evaluated_values[self.equinoctial_ecc_cos_term] = self.equinoctial_ecc_cos_term.evaluate_expr(values_dict)
+        evaluated_values[self.equinoctial_ecc_sin_term] = self.equinoctial_ecc_sin_term.evaluate_expr(values_dict)
+        evaluated_values[self.equinoctial_inc_cos_term] = self.equinoctial_inc_cos_term.evaluate_expr(values_dict)
+        evaluated_values[self.equinoctial_inc_sin_term] = self.equinoctial_inc_sin_term.evaluate_expr(values_dict)
+        evaluated_values[self.mean_longitude] = self.mean_longitude.evaluate_expr(values_dict)
 
         return evaluated_values
 

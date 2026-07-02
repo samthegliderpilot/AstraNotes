@@ -18,3 +18,10 @@ def bates_mueller_white(location: str, notes: Optional[str] = None) -> SourceRef
         location=location,
         notes=notes,
     )
+
+def degenerate_conic_mee(notes : Optional[str]=None)-> SourceRef:
+    return SourceRef(
+    authors="Jacob Williams",
+    title="Modified Equinoctial Elements",
+    location='https://degenerateconic.com/modified-equinoctial-elements.html',
+    notes = notes)
