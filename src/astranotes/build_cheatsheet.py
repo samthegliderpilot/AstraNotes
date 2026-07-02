@@ -1,5 +1,4 @@
 import os
-import re
 import subprocess
 from astranotes.cheatsheet.keplerian_equations import KeplerianEquations
 from astranotes.cheatsheet.render_latex_sources import render_sources_latex
@@ -157,7 +156,7 @@ class LayoutItem:
         eq = equation.expr
         parts = [sy.latex(eq.lhs), sy.latex(eq.rhs)]
         for form in getattr(equation, "forms", ()):
-            parts.append(sy.latex(form.expr))
+            parts.append(sy.latex(form))
         raw = r" = ".join(parts)
         self.eq_latex = _split_long_equation_latex(raw, max_len=65)
 
@@ -224,6 +223,7 @@ def generate_latex():
 
     # Add equations here in the order you want them to appear.
     # col_span is auto-detected from LaTeX string length; override with col_span=N.
+    # Each row sums to GRID_COLS=4 column slots; wide equations span multiple slots.
     items = [
         LayoutItem(kepler.orbital_radius),
         LayoutItem(kepler.semi_latus_rectum),

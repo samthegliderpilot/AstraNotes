@@ -1,4 +1,3 @@
-from dataclasses import dataclass
 from typing import List, Optional, Dict, Sequence
 import ipywidgets as widgets
 import sympy as sy
@@ -29,18 +28,14 @@ def _format_number(value: float, sigfigs: int = 6) -> str:
     # Otherwise: significant digits without excessive noise
     return f"{value:.{sigfigs}g}"
 
-@dataclass(frozen=True)
-class EquationForm:
-    expr: sy.Expr
-
 class EquationDefinition:
-    def __init__(self, expr: sy.Eq, name: str, explanation: str, source: SourceRef, dimension: Dimension, forms : Sequence[EquationForm] = None):
+    def __init__(self, expr: sy.Eq, name: str, explanation: str, source: SourceRef, dimension: Dimension, forms: Sequence[sy.Expr] = None):
         self.expr = expr
         self.name = name
         self.explanation = explanation
         self.source = source
         self.dimension = dimension
-        if forms == None:
+        if forms is None:
             forms = ()
         self.forms = forms
 
@@ -85,7 +80,7 @@ class EquationDefinitionHtmlRender:
 
         # Additional forms: just RHS expressions
         for f in self.equation.forms:
-            parts.append(sy.latex(f.expr))
+            parts.append(sy.latex(f))
 
         latex_str = " = ".join(parts)
 

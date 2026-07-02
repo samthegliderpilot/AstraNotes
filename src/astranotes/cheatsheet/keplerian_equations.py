@@ -3,7 +3,7 @@ from typing import List, Dict
 from functools import cached_property
 import math
 from astranotes.util.units import Length, Time, Angle, Mass, Dimension, Dimensionless
-from astranotes.util.equation_helpers import EquationDefinition, EquationForm
+from astranotes.util.equation_helpers import EquationDefinition
 from astranotes.util.source_ref import SourceRef
 from astranotes.cheatsheet.common_sources import vallado_4e, bates_mueller_white, degenerate_conic_mee
 
@@ -23,19 +23,18 @@ class KeplerianEquations:
         self.flight_path_angle_sy = sy.Symbol(r'\gamma', real=True) # flight path angle
         self.eccentric_anomaly_sy = sy.Symbol('E', real=True) # eccentric anomaly
         self.velocity_sy = sy.Symbol('v', real=True, positive=True)
-        self.vis_viva_sy = sy.Symbol('v', real=True, positive=True)
+        self.vis_viva_sy = sy.Symbol('v', real=True, positive=True) #TODO, needs to be a different letter
         self.mean_motion_sy = sy.Symbol('n', real=True, positive=True)
         self.orbital_period_sy = sy.Symbol('T', real=True, positive=True)
         self.velocity_circular_sy = sy.Symbol('v_c', real=True, positive=True)
         self.velocity_escape_sy = sy.Symbol('v_{esc}', real=True, positive=True)
         self.radius_of_periapsis_sy = sy.Symbol('r_p', real=True, positive=True)
-        self.ecc_ano_sy = sy.Symbol('E', real=True)
-        self.para_ano_sy = sy.Symbol('B', real=True)
-        self.hyp_ano_sy = sy.Symbol('H', real=True)
-        self.ma_sy = sy.Symbol('M', real=True)
+        self.parabolic_anomaly_sy = sy.Symbol('B', real=True)
+        self.hyperbolic_anomaly_sy = sy.Symbol('H', real=True)
+        self.mean_anomaly_sy = sy.Symbol('M', real=True)
         self.angular_momentum_sy = sy.Symbol('h', real=True, positive=True)
-        self.r_per_sy = sy.MatrixSymbol(r'\mathbf{r}_{PQW}', 3, 1)
-        self.v_per_sy = sy.MatrixSymbol(r'\mathbf{v}_{PQW}', 3, 1)
+        self.perifocal_radius_sy = sy.MatrixSymbol(r'\mathbf{r}_{PQW}', 3, 1)
+        self.perifocal_velocity_sy = sy.MatrixSymbol(r'\mathbf{v}_{PQW}', 3, 1)
         self.peri_to_inert_mat_sy = sy.MatrixSymbol(r"[\frac{IJK}{PQW}]", 3, 3)
         self.inertial_radius_sy = sy.MatrixSymbol("r_{IJK}", 3, 1)
 
@@ -46,7 +45,7 @@ class KeplerianEquations:
         v = sy.sqrt(self.mu * (2/self.r_sy - 1/self.a))
         eq = sy.Eq(self.vis_viva_sy, v)
 
-        return EquationDefinition(eq, "Vis-Viva", "The ballance of potential and kinetic energy of a satellite.", vallado_4e("p. 27, Eq. 1-22"), Length/Time)
+        return EquationDefinition(eq, "Vis-Viva", "The balance of potential and kinetic energy of a satellite.", vallado_4e("p. 27, Eq. 1-22"), Length/Time)
 
     @cached_property
     def mean_motion(self)->EquationDefinition:
@@ -60,7 +59,7 @@ class KeplerianEquations:
         """Returns symbolic form of orbital period"""
         T = 2 * sy.pi * sy.sqrt(self.a**3 / self.mu)
         eq = sy.Eq(self.orbital_period_sy, T)
-        return EquationDefinition(eq, "Period", "The time it takes for one orbit to go", bates_mueller_white("p 33: Eq 1.7-9"), Time)
+        return EquationDefinition(eq, "Period", "The time to complete one full orbit.", bates_mueller_white("p 33: Eq 1.7-9"), Time)
 
     @cached_property
     def orbital_radius(self)->EquationDefinition:
@@ -81,11 +80,11 @@ class KeplerianEquations:
         """Returns symbolic form of escape velocity"""
         v_e = sy.sqrt(2 * self.mu / self.r_sy)
         eq = sy.Eq(self.velocity_escape_sy, v_e)
-        return EquationDefinition(eq, "Escape Velocity", "The speed a satellite needs to have to escape the central body it is arround. Assumes a parabolic orbit.", bates_mueller_white('p. 35: Eq 1.9-2'), Length/Time)
+        return EquationDefinition(eq, "Escape Velocity", "The speed a satellite needs to escape the central body. Assumes a parabolic orbit.", bates_mueller_white('p. 35: Eq 1.9-2'), Length/Time)
 
     @cached_property
     def semi_latus_rectum(self)->EquationDefinition:
-        """Returns symbolic form of circular orbit velocity"""
+        """Returns symbolic form of the semi-latus rectum"""
         p = self.a * (1 - self.e**2)
         eq = sy.Eq(self.p_sy, p)
         return EquationDefinition(eq, "Semi-Latus Rectum", "The radius of the orbit at a true anomaly of 90 and 270 degrees.", bates_mueller_white('p. 24: Eq 1.5-6'), Length)
@@ -111,12 +110,12 @@ class KeplerianEquations:
     @cached_property
     def eccentric_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
         ecc_ano = sy.atan2(sy.sin(self.true_anomaly)*sy.sqrt(1-self.e**2), (self.e+sy.cos(self.true_anomaly)))
-        return EquationDefinition(sy.Eq(self.ecc_ano_sy, ecc_ano), "Eccentric Anomaly", "The quadrant-checked eccentric anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
+        return EquationDefinition(sy.Eq(self.eccentric_anomaly_sy, ecc_ano), "Eccentric Anomaly", "The quadrant-checked eccentric anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
 
     @cached_property
     def parabolic_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
         par_ano = sy.atan(sy.sin(self.true_anomaly/2))
-        return EquationDefinition(sy.Eq(self.para_ano_sy, par_ano), "Parabolic Anomaly", "The parabolic anomaly with respect to true anomaly", vallado_4e("p. 2"), Angle)
+        return EquationDefinition(sy.Eq(self.parabolic_anomaly_sy, par_ano), "Parabolic Anomaly", "The parabolic anomaly with respect to true anomaly", vallado_4e("p. 2"), Angle)
 
     @cached_property
     def sin_hyperbolic_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
@@ -133,7 +132,7 @@ class KeplerianEquations:
     @cached_property
     def hyperbolic_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
         ecc_ano = sy.atan2(sy.sinh(self.true_anomaly)*sy.sqrt(self.e**2-1), (self.e+sy.cosh(self.true_anomaly)))
-        return EquationDefinition(sy.Eq(self.hyp_ano_sy, ecc_ano), "Hyperbolic Anomaly", "The hyperbolic anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
+        return EquationDefinition(sy.Eq(self.hyperbolic_anomaly_sy, ecc_ano), "Hyperbolic Anomaly", "The hyperbolic anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
 
 
     @cached_property
@@ -181,16 +180,16 @@ class KeplerianEquations:
     def angular_momentum(self)-> EquationDefinition:
         expr = sy.sqrt(self.mu* self.p_sy)
         form1 = self.r_sy*self.velocity_sy*sy.cos(self.flight_path_angle_sy)
-        equ_def = EquationDefinition(sy.Eq(self.angular_momentum_sy, expr), "Specific Angular Momentum", "The magnitude of the angular momentum vecor", vallado_4e("p. 2"), Length*Length/Time, (EquationForm(form1),))
+        equ_def = EquationDefinition(sy.Eq(self.angular_momentum_sy, expr), "Specific Angular Momentum", "The magnitude of the angular momentum vector", vallado_4e("p. 2"), Length*Length/Time, (form1,))
         return equ_def
 
     @cached_property
     def mean_anomaly_elliptical(self) -> EquationDefinition:
-        return EquationDefinition(sy.Eq(self.ma_sy, self.eccentric_anomaly_sy - self.e*sy.sin(self.eccentric_anomaly_sy)), "Mean Anomaly (Elliptical)", "The time-based angle around the orbit", vallado_4e("p. 2"), Angle)
+        return EquationDefinition(sy.Eq(self.mean_anomaly_sy, self.eccentric_anomaly_sy - self.e*sy.sin(self.eccentric_anomaly_sy)), "Mean Anomaly (Elliptical)", "The time-based angle around the orbit", vallado_4e("p. 2"), Angle)
 
     @cached_property
     def mean_anomaly_hyperbolic(self) -> EquationDefinition:
-        return EquationDefinition(sy.Eq(self.ma_sy, self.e*sy.sinh(self.hyp_ano_sy) - self.hyp_ano_sy), "Mean Anomaly (Hyperbolic)", "The time-based angle around the orbit", vallado_4e("p. 2"), Angle)
+        return EquationDefinition(sy.Eq(self.mean_anomaly_sy, self.e*sy.sinh(self.hyperbolic_anomaly_sy) - self.hyperbolic_anomaly_sy), "Mean Anomaly (Hyperbolic)", "The time-based angle around the orbit", vallado_4e("p. 2"), Angle)
 
     @cached_property
     def semi_latus_rectum_parabolic(self)->EquationDefinition:
@@ -208,7 +207,7 @@ class KeplerianEquations:
             p*sy.sin(ta)/(1+e*sy.cos(ta)),
             0
         ])
-        return EquationDefinition(sy.Eq(self.r_per_sy, r_per), "Perifocal Radius", "The radius vector of the satellite in the orbit plane of the satellite", vallado_4e("2-104"), Length)
+        return EquationDefinition(sy.Eq(self.perifocal_radius_sy, r_per), "Perifocal Radius", "The radius vector of the satellite in the orbit plane of the satellite", vallado_4e("2-104"), Length)
 
     @cached_property
     def perifocal_velocity_vector(self)->EquationDefinition:
@@ -223,7 +222,7 @@ class KeplerianEquations:
             sy.sqrt(mu/p)*(e+sy.cos(ta)),
             0
         ])
-        return EquationDefinition(sy.Eq(self.v_per_sy, v_per), "Perifocal Velocity", "The velocity vector of the satellite in the orbit plane of the satellite", vallado_4e("2-106"), Length/Time)
+        return EquationDefinition(sy.Eq(self.perifocal_velocity_sy, v_per), "Perifocal Velocity", "The velocity vector of the satellite in the orbit plane of the satellite", vallado_4e("2-106"), Length/Time)
 
     @cached_property
     def perifocal_to_inertial_rotation_matrix(self)->EquationDefinition:
@@ -243,13 +242,13 @@ class KeplerianEquations:
     @cached_property
     def inertial_radius_vector(self)->EquationDefinition:
         lhs = self.inertial_radius_sy
-        rhs = self.peri_to_inert_mat_sy * self.r_per_sy
+        rhs = self.peri_to_inert_mat_sy * self.perifocal_radius_sy
         return EquationDefinition(sy.Eq(lhs, rhs), "Radius Vector: Inertial", "The inertial radius vector", vallado_4e("Algorithm 10, page 119"), Length)
 
     @cached_property
     def inertial_velocity_vector(self)->EquationDefinition:
         lhs = sy.MatrixSymbol("v_{IJK}", 3, 1)
-        rhs = self.peri_to_inert_mat_sy * self.v_per_sy
+        rhs = self.peri_to_inert_mat_sy * self.perifocal_velocity_sy
         return EquationDefinition(sy.Eq(lhs, rhs), "Velocity Vector: Inertial", "The inertial velocity vector", vallado_4e("Algorithm 10, page 119"), Length/Time)
 
     @cached_property
@@ -327,7 +326,7 @@ class KeplerianEquations:
             evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = self.eccentric_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.mean_anomaly_elliptical] = self.mean_anomaly_elliptical.evaluate_expr(values_dict)
-        elif ecc >=0.99999 and ecc < 1.00001:
+        elif ecc <=0.99999 and ecc > 1.00001:
             evaluated_values[self.radius_of_apoapsis] = math.nan
             evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = self.parabolic_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.parabolic_anomaly_wrt_true_anomaly] = evaluated_values[self.eccentric_anomaly_wrt_true_anomaly]
@@ -336,16 +335,16 @@ class KeplerianEquations:
         else: # greater than 1, hyperbolic
             evaluated_values[self.radius_of_apoapsis] = math.nan
 
-            values_dict[self.hyp_ano_sy] = self.hyperbolic_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
-            evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = values_dict[self.hyp_ano_sy]
+            values_dict[self.hyperbolic_anomaly_sy] = self.hyperbolic_anomaly_wrt_true_anomaly.evaluate_expr(values_dict)
+            evaluated_values[self.eccentric_anomaly_wrt_true_anomaly] = values_dict[self.hyperbolic_anomaly_sy]
             evaluated_values[self.hyperbolic_anomaly_wrt_true_anomaly] = evaluated_values[self.eccentric_anomaly_wrt_true_anomaly]
             evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.mean_anomaly_hyperbolic] = self.mean_anomaly_hyperbolic.evaluate_expr(values_dict)
 
         evaluated_values[self.perifocal_radius_vector] = self.perifocal_radius_vector.evaluate_expr(values_dict)
         evaluated_values[self.perifocal_velocity_vector] = self.perifocal_velocity_vector.evaluate_expr(values_dict)
-        values_dict[self.r_per_sy] = evaluated_values[self.perifocal_radius_vector]
-        values_dict[self.v_per_sy] = evaluated_values[self.perifocal_velocity_vector]
+        values_dict[self.perifocal_radius_sy] = evaluated_values[self.perifocal_radius_vector]
+        values_dict[self.perifocal_velocity_sy] = evaluated_values[self.perifocal_velocity_vector]
         evaluated_values[self.perifocal_to_inertial_rotation_matrix] = self.perifocal_to_inertial_rotation_matrix.evaluate_expr(values_dict)
         values_dict[self.peri_to_inert_mat_sy] = evaluated_values[self.perifocal_to_inertial_rotation_matrix]
 
