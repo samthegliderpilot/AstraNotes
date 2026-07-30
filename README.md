@@ -100,6 +100,17 @@ Future versions may add:
 
 GPL-3.0. See the LICENSE file for details.
 
+## Analog Astrogator campaign
+
+`campaign/` holds a related but separate project: a set of hand-computation
+orbital mechanics problems (slide rule, tables, period methods — no
+calculator until a late verification step), released as markdown files plus
+generated print-ready PDFs. See `campaign/00-index.md` for the campaign
+itself and `campaign/tools/README.md` for how the PDFs are built. It shares
+this repo starting v1.0; deeper integration with the equation library above
+(shared citations, using it as an answer-key computation engine, etc.) is
+sketched in `docs/v2-astranotes-unification-sketch.md` but not yet done.
+
 ## Why this exists
 
 This project grew out of my desire to better connect the math to the evaluation of these equations.  Sometimes a simple calculator is all we need.  As much as STK or Monte are wonderful, sometimes a scaple is the better tool.  And all in all, this has been a pretty easy project to build.

@@ -1,0 +1,353 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames*,x11names*}{xcolor}
+%
+\documentclass[
+  10pt,
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+  \setmainfont[]{DejaVu Serif}
+  \setmonofont[]{DejaVu Sans Mono}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=Maroon,
+  filecolor=Maroon,
+  citecolor=Blue,
+  urlcolor=Blue,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=0.6in,landscape]{geometry}
+\usepackage{longtable,booktabs}
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\renewcommand{\arraystretch}{1.6}
+
+\author{}
+\date{}
+
+\begin{document}
+
+\hypertarget{stage-1.2-non-constant-isp-ascent-hard-mode}{%
+\section{Stage 1.2 --- Non-Constant Isp Ascent (Hard
+Mode)}\label{stage-1.2-non-constant-isp-ascent-hard-mode}}
+
+\textbf{Era:} Redstone/Mercury-Redstone class, \textasciitilde1961
+(fictional program), continuing Project Arrowhead. \textbf{Target time:}
+a full afternoon. \textbf{Prerequisite:} Stage 1.0 (Range Table
+Targeting), Stage 1.1 (Liftoff Check \& Gravity-Turn Loss).
+
+\hypertarget{why-this-problem-exists}{%
+\subsection{Why this problem exists}\label{why-this-problem-exists}}
+
+1.0 treated specific impulse as a single constant, 235 s, for the whole
+burn. Real engines don't work that way: thrust is F = ṁ·Ve + (Pe −
+Pamb)·Ae --- as the vehicle climbs and ambient pressure Pamb drops, the
+same engine produces more thrust and a higher effective Isp, right up to
+a vacuum ceiling. This is standard, period-authentic propulsion analysis
+(see Sutton, \emph{Rocket Propulsion Elements} --- in print and in
+active engineering use well before 1961) and it is \textbf{not} a small
+effect: most of the pressure drop happens in the first
+\textasciitilde100,000--150,000 ft, which is most of this vehicle's
+burn. Treating Isp as constant, as 1.0 did, understates burnout velocity
+by a meaningful margin --- you'll see by how much below.
+
+This is genuinely harder than 1.0, for a specific reason: Isp now
+depends on altitude, altitude depends on the velocity history, and
+velocity depends on Isp. That circular dependency is why this can't be
+solved in one closed-form step --- it has to be marched forward in time,
+a handful of steps at a time, the same way early trajectory integrators
+(Gauss-Jackson and similar --- already flagged in the campaign's
+reference list as a harder future problem in its own right) worked
+before continuous integration was practical by hand. What you're doing
+here is a simplified version of that same idea.
+
+\hypertarget{given-data}{%
+\subsection{Given data}\label{given-data}}
+
+Same (corrected) vehicle as 1.0/1.1: W₀ = 55,000 lbf, Wₚ = 40,000 lbf
+burned uniformly over t\_b = 143 s (weight decreases linearly with
+time). Standard gravity g₀ = 32.174 ft/s².
+
+\textbf{Loss budget:} Δv\_losses = 3540 ft/s, from Stage 1.1's
+first-principles gravity-turn/drag study.
+
+\textbf{Engine performance --- Isp vs.~altitude} (from separate
+propulsion analysis; reflects the nozzle's altitude compensation as
+ambient pressure drops):
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+h (ft) & Isp (s)\tabularnewline
+\midrule
+\endhead
+0 & 235\tabularnewline
+20,000 & 246\tabularnewline
+40,000 & 253\tabularnewline
+60,000 & 258\tabularnewline
+80,000 & 261\tabularnewline
+100,000 & 263\tabularnewline
+120,000 & 264\tabularnewline
+≥ 140,000 & 265 (vacuum plateau)\tabularnewline
+\bottomrule
+\end{longtable}
+
+\textbf{Ascent altitude profile:} reuse the same trajectory checkpoints
+from Stage 1.1 (same vehicle, same preliminary shaping run) rather than
+a separately-invented profile:
+
+\begin{longtable}[]{@{}ll@{}}
+\toprule
+t (s) & h (ft)\tabularnewline
+\midrule
+\endhead
+0 & 0\tabularnewline
+13 & 604\tabularnewline
+39 & 6,485\tabularnewline
+65 & 19,230\tabularnewline
+91 & 37,878\tabularnewline
+117 & 63,427\tabularnewline
+143 & 100,235\tabularnewline
+\bottomrule
+\end{longtable}
+
+\textbf{Explicit simplification, stated up front:} this problem does
+\emph{not} solve for the trajectory shape --- the altitude profile above
+is a given input (1.1's result), not something you derive from the
+velocity you're computing here. That keeps the coupling one-directional
+(altitude → Isp → Δv) and hand-tractable. The full version, where
+Isp-vs-altitude feeds back into the trajectory shape itself, is real and
+harder --- a natural candidate for a future stage, not this one.
+
+\hypertarget{authentic-method-reference-material}{%
+\subsection{Authentic method + reference
+material}\label{authentic-method-reference-material}}
+
+Divide the burn into the six intervals defined by the checkpoints above
+(note: unequal step sizes --- the first is 13 s, the rest are 26 s each,
+since they come from 1.1's checkpoint times, not an even split). For
+each step:
+
+\begin{verbatim}
+1. Look up altitude at the START of the step (from the given profile).
+2. Interpolate Isp at that altitude.
+3. c = Isp · g₀
+4. Δv_step = c · ln(W_start/W_end)     [W_end from the linear weight burn]
+5. Accumulate: V_cumulative += Δv_step
+\end{verbatim}
+
+\textbf{Note the numerical choice being made in step 1:} using the
+altitude at the \emph{start} of each step to look up Isp for that whole
+step is an explicit (forward-lagged) scheme --- it's simple and
+hand-tractable, but it means each step's Isp is slightly stale (the
+vehicle is actually higher, and Isp actually slightly better, by the
+step's end). A more accurate scheme would use the midpoint or average
+altitude of the step. This is the same kind of approximation-choice
+tradeoff numerical integrators always face --- flagged here so it's a
+visible decision, not a hidden one.
+
+\hypertarget{worksheet}{%
+\subsection{Worksheet}\label{worksheet}}
+
+\begin{longtable}[]{@{}llllllllll@{}}
+\toprule
+\begin{minipage}[b]{0.03\columnwidth}\raggedright
+Step\strut
+\end{minipage} & \begin{minipage}[b]{0.10\columnwidth}\raggedright
+t\_start--t\_end (s)\strut
+\end{minipage} & \begin{minipage}[b]{0.07\columnwidth}\raggedright
+h\_start (ft)\strut
+\end{minipage} & \begin{minipage}[b]{0.08\columnwidth}\raggedright
+Isp (interp.)\strut
+\end{minipage} & \begin{minipage}[b]{0.06\columnwidth}\raggedright
+c = Isp·g₀\strut
+\end{minipage} & \begin{minipage}[b]{0.05\columnwidth}\raggedright
+W\_start\strut
+\end{minipage} & \begin{minipage}[b]{0.04\columnwidth}\raggedright
+W\_end\strut
+\end{minipage} & \begin{minipage}[b]{0.10\columnwidth}\raggedright
+ln(W\_start/W\_end)\strut
+\end{minipage} & \begin{minipage}[b]{0.09\columnwidth}\raggedright
+Δv\_step (ft/s)\strut
+\end{minipage} & \begin{minipage}[b]{0.11\columnwidth}\raggedright
+V\_cumulative (ft/s)\strut
+\end{minipage}\tabularnewline
+\midrule
+\endhead
+\begin{minipage}[t]{0.03\columnwidth}\raggedright
+1\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+0--13\strut
+\end{minipage} & \begin{minipage}[t]{0.07\columnwidth}\raggedright
+0\strut
+\end{minipage} & \begin{minipage}[t]{0.08\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.06\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.05\columnwidth}\raggedright
+55,000\strut
+\end{minipage} & \begin{minipage}[t]{0.04\columnwidth}\raggedright
+51,364\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.09\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.11\columnwidth}\raggedright
+\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.03\columnwidth}\raggedright
+2\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+13--39\strut
+\end{minipage} & \begin{minipage}[t]{0.07\columnwidth}\raggedright
+604\strut
+\end{minipage} & \begin{minipage}[t]{0.08\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.06\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.05\columnwidth}\raggedright
+51,364\strut
+\end{minipage} & \begin{minipage}[t]{0.04\columnwidth}\raggedright
+44,091\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.09\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.11\columnwidth}\raggedright
+\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.03\columnwidth}\raggedright
+3\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+39--65\strut
+\end{minipage} & \begin{minipage}[t]{0.07\columnwidth}\raggedright
+6,485\strut
+\end{minipage} & \begin{minipage}[t]{0.08\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.06\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.05\columnwidth}\raggedright
+44,091\strut
+\end{minipage} & \begin{minipage}[t]{0.04\columnwidth}\raggedright
+36,818\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.09\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.11\columnwidth}\raggedright
+\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.03\columnwidth}\raggedright
+4\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+65--91\strut
+\end{minipage} & \begin{minipage}[t]{0.07\columnwidth}\raggedright
+19,230\strut
+\end{minipage} & \begin{minipage}[t]{0.08\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.06\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.05\columnwidth}\raggedright
+36,818\strut
+\end{minipage} & \begin{minipage}[t]{0.04\columnwidth}\raggedright
+29,546\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.09\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.11\columnwidth}\raggedright
+\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.03\columnwidth}\raggedright
+5\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+91--117\strut
+\end{minipage} & \begin{minipage}[t]{0.07\columnwidth}\raggedright
+37,878\strut
+\end{minipage} & \begin{minipage}[t]{0.08\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.06\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.05\columnwidth}\raggedright
+29,546\strut
+\end{minipage} & \begin{minipage}[t]{0.04\columnwidth}\raggedright
+22,273\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.09\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.11\columnwidth}\raggedright
+\strut
+\end{minipage}\tabularnewline
+\begin{minipage}[t]{0.03\columnwidth}\raggedright
+6\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+117--143\strut
+\end{minipage} & \begin{minipage}[t]{0.07\columnwidth}\raggedright
+63,427\strut
+\end{minipage} & \begin{minipage}[t]{0.08\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.06\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.05\columnwidth}\raggedright
+22,273\strut
+\end{minipage} & \begin{minipage}[t]{0.04\columnwidth}\raggedright
+15,000\strut
+\end{minipage} & \begin{minipage}[t]{0.10\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.09\columnwidth}\raggedright
+\strut
+\end{minipage} & \begin{minipage}[t]{0.11\columnwidth}\raggedright
+\strut
+\end{minipage}\tabularnewline
+\bottomrule
+\end{longtable}
+
+Total ideal Δv (altitude-varying Isp) = \_\_\_\_\_\_\_\_\_\_ ft/s
+
+V\_bo = Total ideal Δv − 3540 ft/s = \_\_\_\_\_\_\_\_\_\_ ft/s
+
+Compare to 1.0's constant-Isp result (V\_bo ≈ 6284 ft/s): difference =
+\_\_\_\_\_\_\_\_\_\_ ft/s ( \_\_\_\_\_\_ \%)
+
+\end{document}

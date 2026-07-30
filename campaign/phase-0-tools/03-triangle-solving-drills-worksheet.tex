@@ -1,0 +1,157 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames*,x11names*}{xcolor}
+%
+\documentclass[
+  10pt,
+]{article}
+\usepackage{lmodern}
+\usepackage{amssymb,amsmath}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+  \setmainfont[]{DejaVu Serif}
+  \setmonofont[]{DejaVu Sans Mono}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=Maroon,
+  filecolor=Maroon,
+  citecolor=Blue,
+  urlcolor=Blue,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=0.6in,landscape]{geometry}
+\usepackage{longtable,booktabs}
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\renewcommand{\arraystretch}{1.6}
+
+\author{}
+\date{}
+
+\begin{document}
+
+\hypertarget{phase-0.3-triangle-solving-drills}{%
+\section{Phase 0.3 --- Triangle-Solving
+Drills}\label{phase-0.3-triangle-solving-drills}}
+
+\textbf{Type:} Tool drill, no mission narrative. \textbf{Target time:}
+\textasciitilde30 min. \textbf{Prerequisite:} 0.0 Slide rule basics, 0.1
+Trig/log table interpolation.
+
+Much of hand orbital mechanics --- tracking geometry, Gauss's method,
+range- and-bearing problems --- reduces at some point to careful
+triangle solving. This drill covers the three tools you'll lean on
+repeatedly: law of cosines, law of sines, and the ambiguous SSA case
+(which trips up more people than it should, and is worth meeting here
+rather than mid-problem later).
+
+\hypertarget{law-of-cosines}{%
+\subsection{Law of cosines}\label{law-of-cosines}}
+
+\begin{verbatim}
+c² = a² + b² − 2ab·cos(C)          (SAS: two sides + included angle → third side)
+cos(C) = (a² + b² − c²) / (2ab)    (SSS: three sides → any angle)
+\end{verbatim}
+
+\hypertarget{law-of-sines}{%
+\subsection{Law of sines}\label{law-of-sines}}
+
+\begin{verbatim}
+a/sin(A) = b/sin(B) = c/sin(C)
+\end{verbatim}
+
+\hypertarget{the-ambiguous-case-ssa}{%
+\subsection{The ambiguous case (SSA)}\label{the-ambiguous-case-ssa}}
+
+Given two sides and a non-included angle, there can be \textbf{zero,
+one, or two} valid triangles. If the given angle is acute and the side
+opposite it is shorter than the other given side, check both the arcsine
+solution and its supplement (180° − that angle) --- both may produce a
+valid triangle. This is a genuine geometric ambiguity, not a mistake to
+avoid; real tracking data resolved it with a second observation or
+physical reasoning about which solution made sense.
+
+\hypertarget{drill-1-sas}{%
+\subsection{Drill 1 --- SAS}\label{drill-1-sas}}
+
+Sides a = 42.3, b = 57.8, included angle C = 63.5°. Find side c.
+
+\hypertarget{drill-2-sss}{%
+\subsection{Drill 2 --- SSS}\label{drill-2-sss}}
+
+Sides a = 35.0, b = 48.0, c = 61.0. Find angle C (opposite the longest
+side).
+
+\hypertarget{drill-3-asa}{%
+\subsection{Drill 3 --- ASA}\label{drill-3-asa}}
+
+Angle A = 41.0°, angle B = 67.0°, side a = 28.5 (opposite A). Find angle
+C, side b, and side c.
+
+\hypertarget{drill-4-ssa-ambiguous-case}{%
+\subsection{Drill 4 --- SSA (ambiguous
+case)}\label{drill-4-ssa-ambiguous-case}}
+
+Side a = 22.0, side b = 30.0, angle A = 25.0° (opposite side a). Find
+all valid solutions for angle B, and complete each triangle (angle C and
+side c).
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\hypertarget{worksheet}{%
+\subsection{Worksheet}\label{worksheet}}
+
+\begin{longtable}[]{@{}llll@{}}
+\toprule
+Drill & Given & Working & Answer\tabularnewline
+\midrule
+\endhead
+1 & a=42.3, b=57.8, C=63.5° & & c =\tabularnewline
+2 & a=35.0, b=48.0, c=61.0 & & C =\tabularnewline
+3 & A=41.0°, B=67.0°, a=28.5 & & C=\_\_\_ b=\_\_\_
+c=\_\_\_\tabularnewline
+4a & a=22.0, b=30.0, A=25.0° & & B=\_\_\_ C=\_\_\_
+c=\_\_\_\tabularnewline
+4b & (second solution) & & B=\_\_\_ C=\_\_\_ c=\_\_\_\tabularnewline
+\bottomrule
+\end{longtable}
+
+\end{document}

@@ -11,3 +11,9 @@ build/
 .mypy_cache/
 .venv/
 .claude
+
+# campaign/tools/make_worksheet_tex.py intermediate output, in case of an
+# interrupted run (normal output is *-worksheet.tex/.pdf, which ARE committed)
+*.worksheet_src.md
+*.aux
+*.out
