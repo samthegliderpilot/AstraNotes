@@ -13,8 +13,8 @@ def _native_inputs(orb: KeplerianEquations, *, a_m, e, nu_rad, mu_m3_s2):
       - mu in m^3/s^2
     """
     return {
-        orb.a: float(a_m),
-        orb.e: float(e),
+        orb.sma: float(a_m),
+        orb.ecc: float(e),
         orb.true_anomaly: float(nu_rad),
         orb.mu: float(mu_m3_s2),
         # r/p intentionally omitted: evaluate_orbital_equations fills them
@@ -127,8 +127,8 @@ def test_mean_motion_units_assume_radians_per_second():
 
     # Example: a=7000 km, mu=Earth
     vals = {
-        orb.a: 7000e3,
-        orb.e: 0.0,
+        orb.sma: 7000e3,
+        orb.ecc: 0.0,
         orb.true_anomaly: 0.0,
         orb.mu: 3.986004418e14,
     }

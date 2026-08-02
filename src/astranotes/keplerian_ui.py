@@ -229,9 +229,9 @@ class OrbitalMechanicsWidget:
     def get_values_dict(self) -> Dict:
         f = self.fields
         return {
-            self.orbital.a: f["a"].current_unit.to_native(f["a"].widget.value),
-            self.orbital.e: f["e"].current_unit.to_native(f["e"].widget.value),  # still unitless, noop
-            self.orbital.i: f["i"].current_unit.to_native(f["i"].widget.value),
+            self.orbital.sma: f["a"].current_unit.to_native(f["a"].widget.value),
+            self.orbital.ecc: f["e"].current_unit.to_native(f["e"].widget.value),  # still unitless, noop
+            self.orbital.inc: f["i"].current_unit.to_native(f["i"].widget.value),
             self.orbital.raan: f["raan"].current_unit.to_native(f["raan"].widget.value),
             self.orbital.arg_pe: f["arg_pe"].current_unit.to_native(f["arg_pe"].widget.value),
             self.orbital.true_anomaly: f["true_anomaly"].current_unit.to_native(f["true_anomaly"].widget.value),
@@ -323,8 +323,8 @@ class OrbitalMechanicsWidget:
         - e dimensionless
         - true_anomaly in radians
         """
-        a = float(native_values[self.orbital.a])
-        e = float(native_values[self.orbital.e])
+        a = float(native_values[self.orbital.sma])
+        e = float(native_values[self.orbital.ecc])
         nu = float(native_values[self.orbital.true_anomaly])  # radians
 
         dwg = orbit_diagram_svg(a=a, e=e, nu=nu)
