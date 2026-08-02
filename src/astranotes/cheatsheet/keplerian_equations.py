@@ -49,6 +49,21 @@ class KeplerianEquations:
         return EquationDefinition(eq, "Vis-Viva", "The balance of potential and kinetic energy of a satellite.", vallado_4e("p. 27, Eq. 1-22"), Length/Time)
 
     @cached_property
+    def orbital_energy(self) -> EquationDefinition:
+        """Returns symbolic form of specific mechanical (orbital) energy"""
+        lhs = sy.Symbol(r'\varepsilon', real=True)
+        rhs = -1*self.mu/(2*self.a)
+        form1 = (self.velocity_sy**2)/2 - self.mu/self.r_sy
+        return EquationDefinition(sy.Eq(lhs, rhs), "Specific Orbital Energy", "The sum of kinetic and potential energy per unit mass; constant along the orbit.", vallado_4e("p. 2"), Length*Length/(Time*Time), (form1,))
+
+    @cached_property
+    def c3(self) -> EquationDefinition:
+        """Returns symbolic form of characteristic energy"""
+        lhs = sy.Symbol('C_3', real=True)
+        rhs = -1*self.mu/self.a
+        return EquationDefinition(sy.Eq(lhs, rhs), "Characteristic Energy", "Twice the specific orbital energy; the excess energy over escape for a hyperbolic departure.", vallado_4e("p. 27"), Length*Length/(Time*Time))
+
+    @cached_property
     def mean_motion(self)->EquationDefinition:
         """Returns the mean motion of the orbit"""
         n = sy.sqrt(self.mu/self.a**3)
@@ -84,11 +99,23 @@ class KeplerianEquations:
         return EquationDefinition(eq, "Escape Velocity", "The speed a satellite needs to escape the central body. Assumes a parabolic orbit.", bates_mueller_white('p. 35: Eq 1.9-2'), Length/Time)
 
     @cached_property
+    def hyperbolic_excess_velocity(self) -> EquationDefinition:
+        lhs = sy.Symbol(r'v_{\infty}', real=True, positive=True)
+        rhs = sy.sqrt(-1*self.mu/self.a) # remember for a hyperbolic orbit, a is negative
+        return EquationDefinition(sy.Eq(lhs, rhs), "Hyperbolic Excess Velocity", "The speed remaining at infinite distance for a hyperbolic orbit.", vallado_4e("p. 26"), Length/Time)
+
+    @cached_property
     def semi_latus_rectum(self)->EquationDefinition:
         """Returns symbolic form of the semi-latus rectum"""
         p = self.a * (1 - self.e**2)
         eq = sy.Eq(self.p_sy, p)
         return EquationDefinition(eq, "Semi-Latus Rectum", "The radius of the orbit at a true anomaly of 90 and 270 degrees.", bates_mueller_white('p. 24: Eq 1.5-6'), Length)
+
+    @cached_property
+    def semi_minor_axis(self)->EquationDefinition:
+        b = self.a * sy.sqrt(1 - self.e**2)
+        eq = sy.Eq(sy.Symbol('b', real=True, positive=True), b)
+        return EquationDefinition(eq, "Semi-Minor Axis", "The half-width of the orbit ellipse, perpendicular to the major axis.", bates_mueller_white('p. 15: Eq 1.4'), Length)
 
     @cached_property
     def velocity_magnitude(self)->EquationDefinition:
@@ -112,6 +139,11 @@ class KeplerianEquations:
     def eccentric_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
         ecc_ano = sy.atan2(sy.sin(self.true_anomaly)*sy.sqrt(1-self.e**2), (self.e+sy.cos(self.true_anomaly)))
         return EquationDefinition(sy.Eq(self.eccentric_anomaly_sy, ecc_ano), "Eccentric Anomaly", "The quadrant-checked eccentric anomaly with respect to true anomaly", vallado_4e("Simplified from other expressions"), Angle)
+
+    @cached_property
+    def true_anomaly_wrt_eccentric_anomaly(self) -> EquationDefinition:
+        true_ano = sy.atan2(sy.sin(self.eccentric_anomaly_sy)*sy.sqrt(1-self.e**2), (sy.cos(self.eccentric_anomaly_sy)-self.e))
+        return EquationDefinition(sy.Eq(self.true_anomaly, true_ano), "True Anomaly", "The quadrant-checked true anomaly with respect to eccentric anomaly", vallado_4e("Simplified from other expressions"), Angle)
 
     @cached_property
     def parabolic_anomaly_wrt_true_anomaly(self) -> EquationDefinition:
@@ -173,9 +205,9 @@ class KeplerianEquations:
 
     @cached_property
     def flight_path_angle_parabolic(self) -> EquationDefinition:
+        lhs = self.flight_path_angle_sy
         flight_path_angle = self.true_anomaly/2
-        fpaSy = self.flight_path_angle_sy
-        return EquationDefinition(sy.Eq(fpaSy, flight_path_angle), "Flight Path Angle - Parabolic", "The flight path angle with respect to the the parabolic anomaly", vallado_4e("p. 2"), Angle)
+        return EquationDefinition(sy.Eq(lhs, flight_path_angle), "Flight Path Angle - Parabolic", "The flight path angle with respect to the the parabolic anomaly", vallado_4e("p. 2"), Angle)
 
     @cached_property
     def angular_momentum(self)-> EquationDefinition:
@@ -281,6 +313,12 @@ class KeplerianEquations:
         return EquationDefinition(sy.Eq(lhs, rhs), "Equinoctial Inclination Sine Term", "The sine term for the inclination term", degenerate_conic_mee(), Dimensionless)
 
     @cached_property
+    def argument_of_latitude(self) -> EquationDefinition:
+        lhs = sy.Symbol('u', real=True)
+        rhs = self.arg_pe + self.true_anomaly
+        return EquationDefinition(sy.Eq(lhs, rhs), "Argument of Latitude", "The angle from the ascending node to the satellite, measured in the orbit plane.", vallado_4e("2-90 p. 102"), Angle)
+
+    @cached_property
     def mean_longitude(self) -> EquationDefinition:
         lhs = sy.Symbol('L', real=True)
         rhs = self.raan + self.arg_pe + self.true_anomaly
@@ -355,6 +393,13 @@ class KeplerianEquations:
 
         evaluated_values[self.delaunay_l] = self.delaunay_l.evaluate_expr(values_dict)
         evaluated_values[self.delaunay_h] = self.delaunay_h.evaluate_expr(values_dict)
+
+        evaluated_values[self.orbital_energy] = self.orbital_energy.evaluate_expr(values_dict)
+        evaluated_values[self.c3] = self.c3.evaluate_expr(values_dict)
+        evaluated_values[self.hyperbolic_excess_velocity] = self.hyperbolic_excess_velocity.evaluate_expr(values_dict)
+        evaluated_values[self.semi_minor_axis] = self.semi_minor_axis.evaluate_expr(values_dict)
+        evaluated_values[self.argument_of_latitude] = self.argument_of_latitude.evaluate_expr(values_dict)
+        evaluated_values[self.true_anomaly_wrt_eccentric_anomaly] = self.true_anomaly_wrt_eccentric_anomaly.evaluate_expr(values_dict)
 
 
         if ecc < 0.99999:
