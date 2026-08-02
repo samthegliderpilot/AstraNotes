@@ -37,7 +37,8 @@ class KeplerianEquations:
         self.perifocal_velocity_sy = sy.MatrixSymbol(r'\mathbf{v}_{PQW}', 3, 1)
         self.peri_to_inert_mat_sy = sy.MatrixSymbol(r"[\frac{IJK}{PQW}]", 3, 3)
         self.inertial_radius_sy = sy.MatrixSymbol("r_{IJK}", 3, 1)
-
+        self.true_anomaly_rate_sy = sy.Symbol(r'\dot{\nu}', real= True)
+        self.radial_rate_sy = sy.Symbol('\dot{r}', real=True)
 
     @cached_property
     def vis_viva(self) -> EquationDefinition:
@@ -201,7 +202,6 @@ class KeplerianEquations:
         ta = self.true_anomaly
         e = self.e
 
-
         r_per = sy.Matrix([
             p*sy.cos(ta)/(1+e*sy.cos(ta)),
             p*sy.sin(ta)/(1+e*sy.cos(ta)),
@@ -215,7 +215,6 @@ class KeplerianEquations:
         ta = self.true_anomaly
         e = self.e
         mu = self.mu
-
 
         v_per = sy.Matrix([
             -1*sy.sqrt(mu/p)*sy.sin(ta),
@@ -287,6 +286,36 @@ class KeplerianEquations:
         rhs = self.raan + self.arg_pe + self.true_anomaly
         return EquationDefinition(sy.Eq(lhs, rhs), "Mean Longitude", "The inertial longitude", degenerate_conic_mee(), Angle)
 
+    @cached_property
+    def true_anomaly_rate(self) -> EquationDefinition:
+        lhs = self.true_anomaly_rate_sy
+        rhs = self.mean_motion_sy*self.a*self.a*sy.sqrt(1-self.e**2)/(self.r_sy**2)
+        return EquationDefinition(sy.Eq(lhs, rhs), "True Anomaly Rate", "The instantaneous rate of change of true anomaly", vallado_4e("p. 2"), Angle/Time)
+
+    @cached_property
+    def radial_rate(self) -> EquationDefinition:
+        lhs = self.radial_rate_sy
+        rhs = self.r_sy*self.true_anomaly_rate_sy*self.e*sy.sin(self.true_anomaly)/(1+self.e*sy.cos(self.true_anomaly))
+        return EquationDefinition(sy.Eq(lhs, rhs), "Radial Rate", "The instantaneous rate of change of distance between the center and the satellite", vallado_4e("p. 2"), Length/Time)
+
+    @cached_property
+    def hyperbolic_turning_angle(self)->EquationDefinition:
+        lhs = sy.Symbol(r'\epsilon', real=True)
+        rhs = 2*sy.asin(1/self.e)
+        return EquationDefinition(sy.Eq(lhs, rhs), "Hyperbolic Turning Angle", "The angle made by the asymotopes of a hyperbolic orbit", vallado_4e("2-28"), Angle)
+
+    @cached_property
+    def delaunay_l(self) -> EquationDefinition:
+        lhs = sy.Symbol('L_d', real=True, positive=True)
+        rhs = sy.sqrt(self.mu*self.a)
+        return EquationDefinition(sy.Eq(lhs, rhs), "Delaunay L", "The L value for Delaunay elements", vallado_4e("2-102"), Length*Length/Time)
+
+    @cached_property
+    def delaunay_h(self) -> EquationDefinition:
+        lhs = sy.Symbol('H_d', real=True)
+        rhs = sy.sqrt(self.mu*self.a*(1-self.e**2))*sy.cos(self.i)
+        return EquationDefinition(sy.Eq(lhs, rhs), "Delauny H", "The H value for Delaunay elements", vallado_4e("2-102"), Length*Length/Time)
+
     def evaluate_my_equations(self, initial_values_dict : Dict[sy.Symbol, float]) -> Dict[EquationDefinition, float]:
         values_dict = initial_values_dict.copy()
         evaluated_values = {}
@@ -316,8 +345,16 @@ class KeplerianEquations:
         evaluated_values[self.escape_velocity] = self.escape_velocity.evaluate_expr(values_dict)
         evaluated_values[self.vis_viva] = self.vis_viva.evaluate_expr(values_dict)
         evaluated_values[self.mean_motion] = self.mean_motion.evaluate_expr(values_dict)
+        values_dict[self.mean_motion_sy] = evaluated_values[self.mean_motion]
         evaluated_values[self.angular_momentum] = self.angular_momentum.evaluate_expr(values_dict)
         evaluated_values[self.radius_of_periapsis] = self.radius_of_periapsis.evaluate_expr(values_dict)
+
+        evaluated_values[self.true_anomaly_rate] = self.true_anomaly_rate.evaluate_expr(values_dict)
+        values_dict[self.true_anomaly_rate_sy] = evaluated_values[self.true_anomaly_rate]
+        evaluated_values[self.radial_rate] = self.radial_rate.evaluate_expr(values_dict)
+
+        evaluated_values[self.delaunay_l] = self.delaunay_l.evaluate_expr(values_dict)
+        evaluated_values[self.delaunay_h] = self.delaunay_h.evaluate_expr(values_dict)
 
 
         if ecc < 0.99999:
@@ -340,6 +377,7 @@ class KeplerianEquations:
             evaluated_values[self.hyperbolic_anomaly_wrt_true_anomaly] = evaluated_values[self.eccentric_anomaly_wrt_true_anomaly]
             evaluated_values[self.flight_path_angle_wrt_eccentric_anomaly] = self.flight_path_angle_wrt_eccentric_anomaly.evaluate_expr(values_dict)
             evaluated_values[self.mean_anomaly_hyperbolic] = self.mean_anomaly_hyperbolic.evaluate_expr(values_dict)
+            evaluated_values[self.hyperbolic_turning_angle] = self.hyperbolic_turning_angle.evaluate_expr(values_dict)
 
         evaluated_values[self.perifocal_radius_vector] = self.perifocal_radius_vector.evaluate_expr(values_dict)
         evaluated_values[self.perifocal_velocity_vector] = self.perifocal_velocity_vector.evaluate_expr(values_dict)

@@ -22,6 +22,38 @@ def ensure_build_dir():
 _WIDE_LATEX_THRESHOLD = 300  # chars; above this an equation auto-sizes to col_span=2
 
 
+def _strip_wrapper_braces(s: str) -> str:
+    """
+    Remove a '{' / '}' pair when it exactly wraps a \\bigl...\\bigr delimited
+    group, i.e. the '{' is immediately followed by \\bigl( / \\bigl[ / \\bigl\\{
+    and its brace-matched '}' is immediately preceded by the corresponding
+    \\bigr) / \\bigr] / \\bigr\\}. Braces are paired by depth first, so a '}'
+    that closes an unrelated, non-delimited group is never touched even if
+    it happens to sit right after a \\bigr token.
+    """
+    open_tokens = (r"\bigl(", r"\bigl[", r"\bigl\{")
+    close_tokens = (r"\bigr)", r"\bigr]", r"\bigr\}")
+
+    stack = []
+    pairs = {}
+    for i, ch in enumerate(s):
+        if ch == "{":
+            stack.append(i)
+        elif ch == "}" and stack:
+            pairs[stack.pop()] = i
+
+    remove = set()
+    for open_idx, close_idx in pairs.items():
+        if any(s.startswith(tok, open_idx + 1) for tok in open_tokens) and \
+           any(s.startswith(tok, close_idx - len(tok)) for tok in close_tokens):
+            remove.add(open_idx)
+            remove.add(close_idx)
+
+    if not remove:
+        return s
+    return "".join(ch for i, ch in enumerate(s) if i not in remove)
+
+
 def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
     """
     Split long LaTeX equations at a sensible place.
@@ -54,13 +86,14 @@ def _split_long_equation_latex(eq_latex: str, max_len: int = 60) -> str:
     )
 
     # 2) Remove outer braces around delimited groups:
-    #    {...\bigl(...\bigr)...} -> ...\bigl(...\bigr)...
-    for old, new in [
-        (r"{\bigl(", r"\bigl("),  (r"\bigr)}", r"\bigr)"),
-        (r"{\bigl[", r"\bigl["),  (r"\bigr]}", r"\bigr]"),
-        (r"{\bigl\{", r"\bigl\{"), (r"\bigr\}}", r"\bigr\}"),
-    ]:
-        safe = safe.replace(old, new)
+    #    {\bigl(...\bigr)} -> \bigl(...\bigr)
+    # Brace-pair aware: a naive global string replace would also strip a
+    # '}' that merely happens to follow a \bigr) but actually closes an
+    # unrelated group, e.g. \sqrt{a \bigl(1 - e^{2}\bigr)} where only part
+    # of the sqrt's argument is delimited. Only strip when the '{' and '}'
+    # are a genuine matching pair (by brace depth) that immediately wrap a
+    # \bigl...\bigr group.
+    safe = _strip_wrapper_braces(safe)
 
     def _find_positions_top_level(s: str, token: str):
         """Find token positions at brace depth 0."""
@@ -237,6 +270,8 @@ def generate_latex():
         LayoutItem(kepler.mean_anomaly_elliptical),
         LayoutItem(kepler.mean_motion),
         LayoutItem(kepler.orbital_period),
+        LayoutItem(kepler.true_anomaly_rate),
+        LayoutItem(kepler.radial_rate),
         LayoutItem(kepler.eccentric_anomaly_wrt_true_anomaly),
         LayoutItem(kepler.flight_path_angle_wrt_eccentric_anomaly),
         LayoutItem(kepler.semi_latus_rectum_parabolic),
@@ -244,6 +279,7 @@ def generate_latex():
         LayoutItem(kepler.flight_path_angle_parabolic),
         LayoutItem(kepler.hyperbolic_anomaly_wrt_true_anomaly),
         LayoutItem(kepler.mean_anomaly_hyperbolic),
+        LayoutItem(kepler.hyperbolic_turning_angle),
         LayoutItem(kepler.perifocal_radius_vector),
         LayoutItem(kepler.perifocal_velocity_vector),
         LayoutItem(kepler.perifocal_to_inertial_rotation_matrix, col_span=2),
@@ -255,6 +291,8 @@ def generate_latex():
         LayoutItem(kepler.equinoctial_inc_cos_term),
         LayoutItem(kepler.equinoctial_inc_sin_term),
         LayoutItem(kepler.mean_longitude),
+        LayoutItem(kepler.delaunay_l),
+        LayoutItem(kepler.delaunay_h),
 
     ]
 
