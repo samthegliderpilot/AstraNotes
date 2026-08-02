@@ -13,14 +13,14 @@ overlap rather than guessing from the project name.
   from the old `AnalogAstrogation` folder (kept around temporarily, outside
   git, as a fallback until the merge is confirmed good).
 - **Three release artifacts, not two.** AstraNotes today ships a PDF cheat
-  sheet and a Jupyter notebook. Analog Astrogator adds a third: the stack of
+  sheet and a Jupyter notebook. Analog Astrogation adds a third: the stack of
   campaign markdown files + their generated worksheet PDFs. v2.0 treats all
   three as siblings from one codebase, not as two projects that happen to
   share a topic.
 - **Entangle further, not just adjacent.** Beyond shared citations —
   shared computation, where it makes sense, so the same tested equation
   code backs both the "fast modern scalpel" (AstraNotes) and the answer
-  keys behind the "slow analog" campaign (Analog Astrogator).
+  keys behind the "slow analog" campaign (Analog Astrogation).
 
 ## What AstraNotes actually is
 
@@ -32,7 +32,7 @@ overlap rather than guessing from the project name.
   exact purpose: `sources_index.py` groups every equation's `SourceRef` by
   source work, and `render_latex_sources.py` / `jupyter_sources_render.py`
   are just two renderers over that same data. This is the reusable piece —
-  a markdown renderer for Analog Astrogator's "Authentic method + reference
+  a markdown renderer for Analog Astrogation's "Authentic method + reference
   material" sections would be a third renderer over data that already
   exists, not a new system.
 - Two consumers of the equation library today: a single-page LaTeX/PDF
@@ -45,13 +45,13 @@ overlap rather than guessing from the project name.
 
 The README's stated philosophy: "sometimes a simple calculator is all we
 need... as much as STK or Monte are wonderful, sometimes a scalpel is the
-better tool." AstraNotes is the fast modern scalpel; Analog Astrogator is
+better tool." AstraNotes is the fast modern scalpel; Analog Astrogation is
 the slow analog one aimed at the same target.
 
 ## Concrete overlap already found
 
 - **Same source texts.** AstraNotes cites Vallado 4e and Bate/Mueller/White;
-  Analog Astrogator's handoff doc leans on BMW for the same material
+  Analog Astrogation's handoff doc leans on BMW for the same material
   (ballistic missile trajectories, Lambert's problem, patched conics) and
   names Battin for later stages. Two independently-typed citation sets for
   the same handful of books is drift waiting to happen — `sources_index.py`
@@ -63,17 +63,17 @@ the slow analog one aimed at the same target.
   equation itself** (`mean_anomaly_elliptical`: M = E − e·sin(E), exactly
   what Phase 0.2 solves by hand with a slide rule). Stage 2 (orbital
   insertion) onward needs essentially this exact equation set.
-- **Every Analog Astrogator problem already has a "Verification step"**
+- **Every Analog Astrogation problem already has a "Verification step"**
   telling the reader to recompute their hand answer in STK or "a quick
   script." AstraNotes *is* that quick script, already built, for anything
   Keplerian.
 - **Both generate PDFs from structured content via LaTeX**, independently.
-  AstraNotes hand-rolls LaTeX strings in Python; Analog Astrogator (as of
+  AstraNotes hand-rolls LaTeX strings in Python; Analog Astrogation (as of
   this session) goes markdown → pandoc → `.tex` → xelatex.
 
 ## The one guardrail worth keeping regardless of how tight the coupling gets
 
-| | Analog Astrogator | AstraNotes |
+| | Analog Astrogation | AstraNotes |
 |---|---|---|
 | Units | Period-authentic — mixed SI and **English/imperial** (lbf, ft, ft/s, slugs) depending on era/stage | SI-native only; no imperial units in `unit_registry` yet |
 | Computer's role | Explicitly minimized — the pedagogical point is *not* using one, except as a late verification/"punch card" step | The computer *is* the product |
@@ -91,14 +91,14 @@ experience on the page.
 ```
 / (AstraNotes repo, kept its git history)
   src/astranotes/          <- unchanged, the equation library + notebook + cheatsheet builder
-  campaign/                <- Analog Astrogator content + tools, copied in as-is
+  campaign/                <- Analog Astrogation content + tools, copied in as-is
     00-index.md
     phase-0-tools/
     stage-1-suborbital/
     tools/                 <- make_worksheet_tex.py, compile_worksheets.py
   docs/
     v2-astranotes-unification-sketch.md   <- this file
-  00-handoff-analog-astrogator.md         <- Analog Astrogator's own planning doc, renamed to avoid clashing with anything repo-root-level
+  00-handoff-analog-astrogation.md        <- Analog Astrogation's own planning doc, renamed to avoid clashing with anything repo-root-level
   pyproject.toml           <- unchanged (AstraNotes' existing setuptools config);
                                campaign/tools' only dependency, matplotlib, was
                                already a core AstraNotes dependency, so no
@@ -114,7 +114,7 @@ are about crossing, deliberately not crossed yet.
 
 ## Entanglement options, loosest to tightest (the actual menu for v2.0)
 
-**1. Shared citation data.** Analog Astrogator's problem files start
+**1. Shared citation data.** Analog Astrogation's problem files start
 sourcing their "Authentic method + reference material" citations from
 AstraNotes' `SourceRef`/`sources_index` data (even just by convention, or
 literally rendering a markdown view through `sources_index.py` the way the
@@ -135,10 +135,10 @@ hard blocker for using AstraNotes as a compute backend for Stage 1-style
 problems (lbf, ft/s, slugs). The `SimpleUnit`/`CompositeUnit`/`Dimension`
 machinery already handles arbitrary conversion math — this is closer to
 "fill in a table" than an architecture change, but it's real work and
-touches AstraNotes' own scope, not just Analog Astrogator's.
+touches AstraNotes' own scope, not just Analog Astrogation's.
 
 **4. Converge the two PDF pipelines.** One shared PDF-building toolkit
-(either AstraNotes' bespoke LaTeX-string generator, or Analog Astrogator's
+(either AstraNotes' bespoke LaTeX-string generator, or Analog Astrogation's
 pandoc-based one, or something new) instead of two independent ones. This
 is the highest-effort, most architecturally-binding option, and the one
 most worth deferring until 1–3 have created enough shared surface area to
@@ -154,7 +154,7 @@ where the content and the equation set actually overlap, and where a
 ## Open question, not answered here
 
 Whether "entangle" extends to a fourth thing — AstraNotes' notebook
-gaining a mode that loads a specific Analog Astrogator problem's inputs and
+gaining a mode that loads a specific Analog Astrogation problem's inputs and
 lets a reader check their hand answer interactively, rather than writing a
 one-off script each time. That would make the notebook a genuine fourth
 touchpoint for the campaign (beyond citations + computation + eventual

@@ -100,16 +100,20 @@ Future versions may add:
 
 GPL-3.0. See the LICENSE file for details.
 
-## Analog Astrogator campaign
+## Analog Astrogation campaign
 
 `campaign/` holds a related but separate project: a set of hand-computation
 orbital mechanics problems (slide rule, tables, period methods — no
 calculator until a late verification step), released as markdown files plus
-generated print-ready PDFs. See `campaign/00-index.md` for the campaign
-itself and `campaign/tools/README.md` for how the PDFs are built. It shares
-this repo starting v1.0; deeper integration with the equation library above
-(shared citations, using it as an answer-key computation engine, etc.) is
-sketched in `docs/v2-astranotes-unification-sketch.md` but not yet done.
+a generated print-ready PDF. The whole campaign so far — every problem,
+narrative through verification, in order — is one combined PDF:
+`build/analog_astrogation_campaign.pdf` (rebuild it with
+`python campaign/tools/build_campaign_pdf.py`). See `campaign/00-index.md`
+for the campaign index and `campaign/tools/README.md` for how the PDFs are
+built. It shares this repo starting v1.0; deeper integration with the
+equation library above (shared citations, using it as an answer-key
+computation engine, etc.) is sketched in
+`docs/v2-astranotes-unification-sketch.md` but not yet done.
 
 ## Why this exists
 

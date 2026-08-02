@@ -1,0 +1,268 @@
+\documentclass[10pt]{article}
+\usepackage[landscape, top=0.5in, bottom=0.6in, left=0.6in, right=0.6in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{titlesec}
+\usepackage{multicol}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyfoot[C]{\footnotesize AstraNotes v0.1.0 — Generated 2026-08-02 21:24 UTC}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\titlespacing*{\section}{0pt}{*0}{*0}
+\titlespacing*{\subsection}{0pt}{*0}{*0}
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{0pt}
+\setlength{\abovedisplayskip}{5pt}
+\setlength{\belowdisplayskip}{5pt}
+\begin{document}
+\vspace*{-1.5em}
+{\small
+\noindent
+\textbf{AstraNotes Cheat Sheet: Keplerian Orbits} \quad --- \quad \textsc{SamTheGliderPilot}
+}
+\vspace{1em}
+\section*{Keplerian Orbital Equations}
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{0pt}
+\setlength{\abovedisplayskip}{2pt}
+\setlength{\belowdisplayskip}{2pt}
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Radius}}}
+\[r = \frac{p}{e \cos{\left(\nu \right)} + 1}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Semi-Latus Rectum}}}
+\[p = a \left(1 - e^{2}\right)\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Semi-Minor Axis}}}
+\[b = a \sqrt{1 - e^{2}}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Radius of Periapsis}}}
+\[r_{p} = a \left(1 - e\right)\]
+\end{minipage}
+\par\smallskip
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Radius of Apoapsis}}}
+\[r_{a} = a \left(e + 1\right)\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Velocity (elliptical)}}}
+\[v = \sqrt{\frac{2 \mu}{r} - \frac{\mu}{a}}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Vis-Viva}}}
+\[v = \sqrt{\mu} \sqrt{\frac{2}{r} - \frac{1}{a}}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Specific Orbital Energy}}}
+\[\begin{aligned}\varepsilon = - \frac{\mu}{2 a} = - \frac{\mu}{r} \\ + \frac{v^{2}}{2}\end{aligned}\]
+\end{minipage}
+\par\smallskip
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Characteristic Energy}}}
+\[C_{3} = - \frac{\mu}{a}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Velocity (circular)}}}
+\[v_{c} = \frac{\sqrt{\mu}}{\sqrt{r}}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Escape Velocity}}}
+\[v_{esc} = \frac{\sqrt{2} \sqrt{\mu}}{\sqrt{r}}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Hyperbolic Excess Velocity}}}
+\[v_{\infty} = \sqrt{\mu} \sqrt{- \frac{1}{a}}\]
+\end{minipage}
+\par\smallskip
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Specific Angular Momentum}}}
+\[h = \sqrt{\mu} \sqrt{p} = r v \cos{\left(\gamma \right)}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Mean Anomaly (Elliptical)}}}
+\[M = E - e \sin{\left(E \right)}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Mean Motion}}}
+\[n = \sqrt{\mu} \sqrt{\frac{1}{a^{3}}}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Period}}}
+\[T = \frac{2 \pi \sqrt{a^{3}}}{\sqrt{\mu}}\]
+\end{minipage}
+\par\smallskip
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{True Anomaly Rate}}}
+\[\dot{\nu} = \frac{a^{2} n \sqrt{1 - e^{2}}}{r^{2}}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Radial Rate}}}
+\[\dot{r} = \frac{\dot{\nu} e r \sin\bigl(\nu \bigr)}{e \cos\bigl(\nu \bigr) + 1}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Argument of Latitude}}}
+\[u = \nu + \omega\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Eccentric Anomaly}}}
+\[\begin{aligned}E = \operatorname{atan}_{2}\bigl(\sqrt{1 - e^{2}} \sin\bigl(\nu \bigr), \\ e + \cos\bigl(\nu \bigr) \bigr)\end{aligned}\]
+\end{minipage}
+\par\smallskip
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{True Anomaly}}}
+\[\begin{aligned}\nu = \operatorname{atan}_{2}\bigl(\sqrt{1 - e^{2}} \sin\bigl(E \bigr), \\ - e + \cos\bigl(E \bigr) \bigr)\end{aligned}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Flight Path Angle}}}
+\[\begin{aligned}\gamma = \operatorname{atan}_{2}\bigl(e \sin\bigl(E \bigr), \\ 1 - e^{2} \bigr)\end{aligned}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Semi-Latus Rectum (Parabolic)}}}
+\[p = \frac{h^{2}}{\mu}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Parabolic Anomaly}}}
+\[B = \operatorname{atan}\bigl(\sin\bigl(\frac{\nu}{2} \bigr) \bigr)\]
+\end{minipage}
+\par\smallskip
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Flight Path Angle - Parabolic}}}
+\[\gamma = \frac{\nu}{2}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Hyperbolic Anomaly}}}
+\[\begin{aligned}H = \operatorname{atan}_{2}\bigl(\sqrt{e^{2} - 1} \sinh\bigl(\nu \bigr), \\ e + \cosh\bigl(\nu \bigr) \bigr)\end{aligned}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Mean Anomaly (Hyperbolic)}}}
+\[M = - H + e \sinh{\left(H \right)}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Hyperbolic Turning Angle}}}
+\[\epsilon = 2 \operatorname{asin}{\left(\frac{1}{e} \right)}\]
+\end{minipage}
+\par\smallskip
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Perifocal Radius}}}
+\[\mathbf{r}_{PQW} = \left[\begin{matrix}\frac{p \cos{\left(\nu \right)}}{e \cos{\left(\nu \right)} + 1}\\\frac{p \sin{\left(\nu \right)}}{e \cos{\left(\nu \right)} + 1}\\0\end{matrix}\right]\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Perifocal Velocity}}}
+\[\mathbf{v}_{PQW} = \left[\begin{matrix}- \frac{\sqrt{\mu} \sin{\left(\nu \right)}}{\sqrt{p}}\\\frac{\sqrt{\mu} \left(e + \cos{\left(\nu \right)}\right)}{\sqrt{p}}\\0\end{matrix}\right]\]
+\end{minipage}%
+\begin{minipage}[t]{0.4975\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Perifocal to Inertial Rotation Matrix}}}
+\[\resizebox{\linewidth}{!}{$[\frac{IJK}{PQW}] = \left[\begin{matrix}- \sin{\left(\Omega \right)} \sin{\left(\omega \right)} \cos{\left(i \right)} + \cos{\left(\Omega \right)} \cos{\left(\omega \right)} & - \sin{\left(\Omega \right)} \cos{\left(\omega \right)} \cos{\left(i \right)} - \sin{\left(\omega \right)} \cos{\left(\Omega \right)} & \sin{\left(\Omega \right)} \sin{\left(i \right)}\\\sin{\left(\Omega \right)} \cos{\left(\omega \right)} + \sin{\left(\omega \right)} \cos{\left(\Omega \right)} \cos{\left(i \right)} & - \sin{\left(\Omega \right)} \sin{\left(\omega \right)} + \cos{\left(\Omega \right)} \cos{\left(\omega \right)} \cos{\left(i \right)} & - \sin{\left(i \right)} \cos{\left(\Omega \right)}\\\sin{\left(\omega \right)} \sin{\left(i \right)} & \sin{\left(i \right)} \cos{\left(\omega \right)} & \cos{\left(i \right)}\end{matrix}\right]$}\]
+\end{minipage}
+\par\smallskip
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Radius Vector: Inertial}}}
+\[r_{IJK} = [\frac{IJK}{PQW}] \mathbf{r}_{PQW}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Velocity Vector: Inertial}}}
+\[v_{IJK} = [\frac{IJK}{PQW}] \mathbf{v}_{PQW}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Two Body Differential Equation}}}
+\[\ddot{\hat{r}} = - \frac{\mu}{r^{3}} r_{IJK}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Equinoctial Eccentrity Cosine Term}}}
+\[f = e \cos{\left(\Omega + \omega \right)}\]
+\end{minipage}
+\par\smallskip
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Equinoctial Eccentrity Sine Term}}}
+\[g = e \sin{\left(\Omega + \omega \right)}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Equinoctial Inclination Cosine Term}}}
+\[h = \cos{\left(\Omega \right)} \tan{\left(\frac{i}{2} \right)}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Equinoctial Inclination Sine Term}}}
+\[k = \sin{\left(\Omega \right)} \tan{\left(\frac{i}{2} \right)}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Mean Longitude}}}
+\[L = \Omega + \nu + \omega\]
+\end{minipage}
+\par\smallskip
+\noindent\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Delaunay L}}}
+\[L_{d} = \sqrt{\mu} \sqrt{a}\]
+\end{minipage}%
+\begin{minipage}[t]{0.2487\textwidth}
+\noindent{\footnotesize\textbf{\mbox{Delauny H}}}
+\[H_{d} = \sqrt{\mu} \sqrt{a \bigl(1 - e^{2}\bigr)} \cos\bigl(i \bigr)\]
+\end{minipage}
+\par\smallskip
+\clearpage
+\section*{Sources}
+\begin{footnotesize}
+\setlength{\parskip}{0pt}
+\setlength{\parindent}{0pt}
+\begin{multicols}{2}
+\noindent\textbf{Bates, Mueller, White --- \textit{Fundamentals of Astrodynamics}}
+\begin{itemize}[noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+\item \textbf{Escape Velocity} --- p. 35: Eq 1.9-2
+\item \textbf{Period} --- p 33: Eq 1.7-9
+\item \textbf{Radius} --- p. 20: Eq 1.5-4
+\item \textbf{Semi-Latus Rectum} --- p. 24: Eq 1.5-6
+\item \textbf{Semi-Minor Axis} --- p. 15: Eq 1.4
+\item \textbf{Velocity (circular)} --- p. 34: Eq 1.8-2
+\end{itemize}
+\noindent\textbf{Jacob Williams --- \textit{Modified Equinoctial Elements}}
+\begin{itemize}[noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+\item \textbf{Equinoctial Eccentrity Cosine Term} --- https://degenerateconic.com/modified-equinoctial-elements.html
+\item \textbf{Equinoctial Eccentrity Sine Term} --- https://degenerateconic.com/modified-equinoctial-elements.html
+\item \textbf{Equinoctial Inclination Cosine Term} --- https://degenerateconic.com/modified-equinoctial-elements.html
+\item \textbf{Equinoctial Inclination Sine Term} --- https://degenerateconic.com/modified-equinoctial-elements.html
+\item \textbf{Mean Longitude} --- https://degenerateconic.com/modified-equinoctial-elements.html
+\end{itemize}
+\noindent\textbf{Vallado --- \textit{Fundamentals of Astrodynamics and Applications} --- 4th Edition}
+\begin{itemize}[noitemsep,topsep=0pt,parsep=0pt,partopsep=0pt]
+\item \textbf{Argument of Latitude} --- 2-90 p. 102
+\item \textbf{Characteristic Energy} --- p. 27
+\item \textbf{Delaunay L} --- 2-102
+\item \textbf{Delauny H} --- 2-102
+\item \textbf{Eccentric Anomaly} --- Simplified from other expressions
+\item \textbf{Flight Path Angle} --- Simplified from other expressions
+\item \textbf{Flight Path Angle - Parabolic} --- p. 2
+\item \textbf{Hyperbolic Anomaly} --- Simplified from other expressions
+\item \textbf{Hyperbolic Excess Velocity} --- p. 26
+\item \textbf{Hyperbolic Turning Angle} --- 2-28
+\item \textbf{Mean Anomaly (Elliptical)} --- p. 2
+\item \textbf{Mean Anomaly (Hyperbolic)} --- p. 2
+\item \textbf{Mean Motion} --- p. 45: Eq 2-5
+\item \textbf{Parabolic Anomaly} --- p. 2
+\item \textbf{Perifocal Radius} --- 2-104
+\item \textbf{Perifocal to Inertial Rotation Matrix} --- Algorithm 10, page 119
+\item \textbf{Perifocal Velocity} --- 2-106
+\item \textbf{Radial Rate} --- p. 2
+\item \textbf{Radius of Apoapsis} --- p. 2
+\item \textbf{Radius of Periapsis} --- p. 2
+\item \textbf{Radius Vector: Inertial} --- Algorithm 10, page 119
+\item \textbf{Semi-Latus Rectum (Parabolic)} --- p. 3
+\item \textbf{Specific Angular Momentum} --- p. 2
+\item \textbf{Specific Orbital Energy} --- p. 2
+\item \textbf{True Anomaly} --- Simplified from other expressions
+\item \textbf{True Anomaly Rate} --- p. 2
+\item \textbf{Two Body Differential Equation} --- 1-14, page 23
+\item \textbf{Velocity (elliptical)} --- p. 2
+\item \textbf{Velocity Vector: Inertial} --- Algorithm 10, page 119
+\item \textbf{Vis-Viva} --- p. 27, Eq. 1-22
+\end{itemize}
+\end{multicols}
+\end{footnotesize}
+\vspace{0.75em}
+\noindent{\footnotesize\textbf{Note on atan2:} This sheet uses $\mathrm{atan2}(y, x)$ (sine term/$y$ first, cosine term/$x$ second) to preserve quadrant.}
+\end{document}

@@ -1,4 +1,4 @@
-# Analog Astrogator — Project Handoff
+# Analog Astrogation — Project Handoff
 
 This document summarizes everything decided in the planning conversation that led up to
 this repo. Read this first, then ask the user (a flight dynamics / mission design
@@ -181,7 +181,7 @@ with direct links.
   (e.g. inserting a Sputnik-era problem later) over PDF's opacity to diff tools.
 - **Digital answer keys included** inline in the same file (clearly headed so they're
   easy to avoid reading early, but not hidden in a separate file).
-- Repo lives locally at `C:\src\AnalogAstrogator` on the user's Windows machine.
+- Repo lives locally at `C:\src\AnalogAstrogation` on the user's Windows machine.
 - The user is using **Cowork** (not Claude Code) specifically because they prefer this
   conversational disposition over Claude Code's more code-focused tuning — be mindful
   of that preference; don't drift into a terse "code-writing-robot" register.

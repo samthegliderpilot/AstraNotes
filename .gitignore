@@ -6,14 +6,19 @@ __pycache__/
 .vscode/
 *.egg-info/
 dist/
-build/
 *.log
 .mypy_cache/
 .venv/
 .claude
 
-# campaign/tools/make_worksheet_tex.py intermediate output, in case of an
-# interrupted run (normal output is *-worksheet.tex/.pdf, which ARE committed)
-*.worksheet_src.md
+# stray LaTeX compile droppings, in case anything ever runs outside its
+# usual isolated temp dir
 *.aux
 *.out
+
+# campaign per-problem worksheet build output -- regenerate on demand via
+# campaign/tools/build_worksheet_pdf.py for live/print use. The one
+# committed campaign deliverable is build/analog_astrogation_campaign.pdf
+# (built by build_campaign_pdf.py).
+campaign/**/*-worksheet.pdf
+campaign/**/*-worksheet-grid_*.png

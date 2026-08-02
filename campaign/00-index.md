@@ -1,4 +1,4 @@
-# Analog Astrogator — Campaign Index
+# Analog Astrogation — Campaign Index
 
 Living index of every problem in the campaign, in build order. Update this file
 whenever a new problem is added or an earlier-era problem gets inserted out of
@@ -95,16 +95,20 @@ Track any problem inserted out of build order here, with the reason.
 - Every problem file follows the six-part Problem Package Format (narrative
   frame, given data, authentic method + reference, worksheet, answer key +
   tolerance, verification step) — Phase 0 drills omit the narrative frame.
-- **Printable worksheets:** two-step pipeline in `tools/`. `make_worksheet_tex.py`
-  extracts the spoiler-free part of a problem (narrative through worksheet
-  only — Hint, Answer key, and Verification sections are stripped) and
-  writes a committed `<name>-worksheet.tex`; `compile_worksheets.py` compiles
-  `.tex` files to `<name>-worksheet.pdf`. Both the `.tex` and `.pdf` are
-  generated artifacts checked into git — re-run both steps after editing a
-  problem's worksheet section. If a worksheet step asks the reader to plot
-  and read a value graphically, add a `<!-- printable-grid: ... -->` marker
+- **Combined campaign PDF:** `python campaign/tools/build_campaign_pdf.py`
+  builds `build/analog_astrogation_campaign.pdf` — every problem's full
+  content (narrative through verification), stage by stage, with a title
+  page and table of contents. This is the primary shareable deliverable and
+  the only campaign build output checked into git; re-run it after editing
+  any problem file.
+- **Printable worksheets (live/print use):**
+  `python campaign/tools/build_worksheet_pdf.py <problem.md>` (or `--all`)
+  builds one problem's spoiler-free `<name>-worksheet.pdf` directly —
+  narrative through worksheet only, Hint/Answer key/Verification stripped.
+  Generated on demand — **not** committed to git (see `tools/README.md`). If
+  a worksheet step asks the reader to plot and read a value graphically, add
+  a `<!-- printable-grid: ... -->` marker
   (see `tools/README.md` for the attributes) at that point in the source
-  file — the tool expands it into a pre-scaled, gridlined blank chart
-  (saved as `<name>-worksheet-grid_N.png`, also committed) so the reader can
-  plot and read with a ruler directly on the printout, no separate graph
-  paper needed.
+  file — the tool expands it into a pre-scaled, gridlined blank chart so the
+  reader can plot and read with a ruler directly on the printout, no
+  separate graph paper needed.

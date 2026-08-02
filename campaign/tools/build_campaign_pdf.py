@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+"""Build a single combined PDF containing every campaign problem's full
+content (narrative through verification), stage by stage, in campaign order.
+
+Unlike build_worksheet_pdf.py (which extracts only the spoiler-free worksheet
+portion of one problem for live/print use), this builds the whole campaign,
+answer keys and all, as one shareable reference document -- title page, table
+of contents, one section per stage, one subsection per problem.
+
+Usage: python3 build_campaign_pdf.py [output.pdf]
+
+Everything (concatenated markdown, grid images, .tex, xelatex droppings) is
+built in an isolated temp directory; only the final PDF is written back into
+the repo.
+"""
+import re
+import subprocess
+import sys
+import tempfile
+from datetime import date
+from itertools import groupby
+from pathlib import Path
+
+from _shared import PREAMBLE, REPO_ROOT, STAGE_ORDER, expand_grids, compile_tex_to_pdf, iter_problem_files
+
+DEFAULT_OUTPUT = REPO_ROOT / "build" / "analog_astrogation_campaign.pdf"
+
+HEADING_RE = re.compile(r'^(#{1,6})(\s)', re.MULTILINE)
+DETAILS_OPEN_RE = re.compile(r'<details>\s*\n<summary>(.*?)</summary>', re.DOTALL)
+
+
+def demote_headings(md_text: str) -> str:
+    """Push every ATX heading down one level, so a problem's own `# Title`
+    nests under its stage's `# <Stage Title>` heading as `## Title`."""
+    return HEADING_RE.sub(r'#\1\2', md_text)
+
+
+def flatten_details(md_text: str) -> str:
+    """Un-collapse <details><summary>X</summary>...</details> hint blocks to
+    plain **X** + content -- pandoc's LaTeX writer has no good equivalent for
+    a collapsible block, and this is a full-spoiler reference document."""
+    md_text = DETAILS_OPEN_RE.sub(r'**\1**', md_text)
+    md_text = md_text.replace('</details>', '')
+    return md_text
+
+
+def process_problem(md_path: Path, stage_folder: str, image_dir: Path) -> str:
+    text = md_path.read_text(encoding="utf-8")
+    text = flatten_details(text)
+    text = demote_headings(text)
+    stem = f"{stage_folder}-{md_path.stem}"
+    text = expand_grids(text, image_dir, stem)
+    return "\n\\newpage\n\n" + text.rstrip() + "\n"
+
+
+def build_campaign_markdown(workdir: Path) -> Path:
+    stage_titles = dict(STAGE_ORDER)
+    parts = []
+    for stage_folder, group in groupby(iter_problem_files(), key=lambda item: item[0]):
+        parts.append(f"\n\\newpage\n\n# {stage_titles[stage_folder]}\n")
+        for _stage_folder, md_path in group:
+            parts.append(process_problem(md_path, stage_folder, workdir))
+
+    combined_md = workdir / "campaign.md"
+    combined_md.write_text("\n".join(parts), encoding="utf-8")
+    return combined_md
+
+
+def make_tex(combined_md: Path, out_tex: Path):
+    cmd = [
+        "pandoc", str(combined_md),
+        "-o", str(out_tex),
+        "-f", "markdown+raw_tex",  # let literal \newpage pass through to the LaTeX writer
+        "-s",
+        "--toc", "--toc-depth=2",
+        "-M", "title=Analog Astrogation — Campaign Workbook",
+        "-M", f"date={date.today().isoformat()}",
+        "-V", "papersize=letter",
+        "-V", "geometry:margin=0.6in",
+        "-V", "fontsize=10pt",
+        "-V", "colorlinks=true",
+        "-V", "mainfont=DejaVu Serif",
+        "-V", "monofont=DejaVu Sans Mono",
+        "--pdf-engine=xelatex",
+        "-H", str(PREAMBLE),
+    ]
+    subprocess.run(cmd, check=True)
+
+
+def main(output: Path):
+    with tempfile.TemporaryDirectory() as td:
+        workdir = Path(td)
+        combined_md = build_campaign_markdown(workdir)
+        out_tex = workdir / "campaign.tex"
+        make_tex(combined_md, out_tex)
+        # grid images were written into workdir with a per-problem stem
+        # (not out_tex's own stem), so they don't match compile_tex_to_pdf's
+        # default same-stem glob -- pass them explicitly instead.
+        grid_pngs = sorted(workdir.glob("*-grid_*.png"))
+        if not compile_tex_to_pdf(out_tex, output, extra_assets=grid_pngs):
+            sys.exit(1)
+
+
+if __name__ == "__main__":
+    output = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else DEFAULT_OUTPUT
+    main(output)
