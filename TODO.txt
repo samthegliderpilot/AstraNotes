@@ -1,7 +1,5 @@
 For 1.0
-- More equations
-- Spacing/formating (in pdf especally, but might be good enough)
-- Fix bugs
+- Fix bugs as they come up
 - Make a pipeline for deploying notebook
 
 For v2.0
