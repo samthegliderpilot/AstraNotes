@@ -1,5 +1,7 @@
 # AstraNotes
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/samthegliderpilot/AstraNotes/main?labpath=notebooks)
+
 AstraNotes is an orbital mechanics cheat sheet with two faces:
 - a clean, printable PDF of commonly used Keplerian equations
 - an interactive Jupyter notebook where you can enter orbital elements and see values evaluated immediately
@@ -68,7 +70,7 @@ The equations update automatically, and a Sources section shows where each equat
 
 From an activated virtual environment:
 ```
-python -m astrocalc.build_cheatsheet
+python src/astranotes/build_cheatsheet.py
 ```
 
 This generates a LaTeX file and compiles it into a PDF.  LaTeX is required for PDF generation.
@@ -98,7 +100,12 @@ Future versions may add:
 
 ## License
 
-GPL-3.0. See the LICENSE file for details.
+Code (`src/astranotes/`, `campaign/tools/`) is licensed under the Mozilla
+Public License 2.0 — see the [LICENSE](LICENSE) file.
+
+Content (the Analog Astrogation campaign problems, notebooks, and generated
+PDFs) is licensed under Creative Commons Attribution-ShareAlike 4.0
+International (CC-BY-SA 4.0) — see [campaign/LICENSE](campaign/LICENSE).
 
 ## Analog Astrogation campaign
 
