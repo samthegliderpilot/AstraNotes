@@ -34,7 +34,13 @@ jobs:
             fonts-dejavu
 
       - name: Install AstraNotes
-        run: pip install -e .
+        # equation_helpers.py imports ipywidgets at module level (it also
+        # holds the notebook-rendering classes), so the PDF-build import
+        # chain needs it too even though building a PDF never touches
+        # widgets. Not pulling in the full `.[notebook]` extra here since
+        # that also drags in jupyter_contrib_nbextensions, which isn't
+        # needed for a headless PDF build.
+        run: pip install -e . ipywidgets
 
       - name: Build cheat sheet PDF
         run: python src/astranotes/build_cheatsheet.py
