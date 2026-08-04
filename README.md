@@ -3,11 +3,21 @@
 [![Latest Release](https://img.shields.io/github/v/release/samthegliderpilot/AstraNotes)](https://github.com/samthegliderpilot/AstraNotes/releases/latest)
 [![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh/samthegliderpilot/AstraNotes/main?labpath=notebooks)
 
-AstraNotes is an orbital mechanics cheat sheet with two faces:
-- a clean, printable PDF of commonly used Keplerian equations
-- an interactive Jupyter notebook where you can enter orbital elements and see values evaluated immediately
+This repo is home to a small family of orbital-mechanics learning resources:
 
-It is designed as a reference and learning aid, not a full astrodynamics library or flight dynamics simulator.
+- **AstraNotes** — a Keplerian equation cheat sheet with two faces: a clean,
+  printable PDF of commonly used equations, and an interactive Jupyter
+  notebook where you enter orbital elements and see values evaluated
+  immediately.
+- **[Analog Astrogation](#analog-astrogation-campaign)** — a campaign of
+  hand-computation orbital mechanics problems (slide rule, tables, no
+  calculator until a late verification step).
+- **[Lesson notebooks](#lesson-notebooks)** — worked derivations paired with
+  runnable code, going deeper into specific topics one at a time.
+
+None of it is a full astrodynamics library or flight dynamics simulator —
+it's reference material and learning aids, designed to stay close to the
+math you'd see in a standard textbook.
 
 ## What is this for?
 
@@ -65,8 +75,8 @@ When finished, select the kernel Python (AstraNotes) in Jupyter.
 ## Using the notebook
 
 Open the main notebook and:
-1 enter orbital elements
-1 choose display units
+- enter orbital elements
+- choose display units
 
 The equations update automatically, and a Sources section shows where each equation comes from.
 
@@ -141,8 +151,24 @@ equation library above (shared citations, using it as an answer-key
 computation engine, etc.) is sketched in
 `docs/v2-astranotes-unification-sketch.md` but not yet done.
 
+## Lesson notebooks
+
+`notebooks/` also holds a small, separate series of lesson notebooks —
+worked derivations paired with runnable code, going deeper into one topic
+at a time rather than being a general reference. First one: **Lesson 1 —
+The STM in the Two-Body Problem**
+(`notebooks/Lesson_1_STM_2BP_Fundamentals.ipynb`), deriving the variational
+equations with sympy and propagating the state transition matrix alongside
+the trajectory with scipy. Launch it directly in Binder — see
+[Try it without installing anything](#try-it-without-installing-anything)
+above.
+
+These are LLM-assisted lessons, generated to help teach the material — each
+notebook says so up front, and mistakes get found and corrected while
+working through the exercises.
+
 ## Why this exists
 
-This project grew out of my desire to better connect the math to the evaluation of these equations.  Sometimes a simple calculator is all we need.  As much as STK or Monte are wonderful, sometimes a scaple is the better tool.  And all in all, this has been a pretty easy project to build.
+This project grew out of my desire to better connect the math to the evaluation of these equations.  Sometimes a simple calculator is all we need.  As much as STK or Monte are wonderful, sometimes a scalpel is the better tool.  And all in all, this has been a pretty easy project to build.
 
 I hope you find it as useful as I do.
