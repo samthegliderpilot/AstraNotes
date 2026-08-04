@@ -1,0 +1,53 @@
+name: Release
+
+# Fires on a pushed tag (v2026.08.02, v1.2.3, etc.) -- NOT on every push to
+# main. Pushing to main is just pushing code; a release only happens when
+# you deliberately cut a tag.
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install system dependencies (pandoc, xelatex, DejaVu fonts)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            pandoc \
+            texlive-xetex \
+            texlive-latex-extra \
+            texlive-fonts-recommended \
+            fonts-dejavu
+
+      - name: Install AstraNotes
+        run: pip install -e .
+
+      - name: Build cheat sheet PDF
+        run: python src/astranotes/build_cheatsheet.py
+
+      - name: Build campaign PDF
+        run: python campaign/tools/build_campaign_pdf.py
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            build/keplerian_cheatsheet.pdf \
+            build/analog_astrogation_campaign.pdf \
+            --title "${{ github.ref_name }}" \
+            --generate-notes
