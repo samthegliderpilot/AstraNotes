@@ -330,7 +330,7 @@ class OrbitalMechanicsWidget:
         dwg = orbit_diagram_svg(a=a, e=e, nu=nu)
         self.orbit_diagram_out.outputs = ({
             "output_type": "display_data",
-            "data": {"image/svg+xml": str(dwg), "text/plain": "orbit diagram"},
+            "data": {"image/svg+xml": dwg.as_svg(), "text/plain": "orbit diagram"},
             "metadata": {},
         },)
 

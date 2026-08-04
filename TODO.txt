@@ -1,11 +1,8 @@
-For 1.0
-- Fix bugs as they come up
-- Make a pipeline for deploying notebook
-
-For v2.0
+For next
 - Time system equations
 - Export an excel file from equations
 - Export a python class to do simple evaluations
+- More STM and slide rule lessons!
 
 For later
 - Reference frame transforms
